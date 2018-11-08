@@ -1,0 +1,34 @@
+# -*- coding: utf-8 -*-
+
+"""
+Created on Fri Jul 13 09:24:51 2018
+
+@author: nick.wardle
+"""
+
+# == SETTINGS & TEXT STRINGS FOR THE GAME =====================================
+
+# == Input text prefixes
+
+inputQuestionPre = '>> '
+inputFeedbackPre = '## '
+inputChangeLocPre = '~>> '
+errorPre = '!!!- '
+
+
+# == Input window formatters
+
+shortLnNewLine = '-' * 40 + '\n'
+
+
+# == UI feedback text
+
+exitMessage = "Exiting game..."
+
+cheaterMessage = ["Cheaters never win!", "Really? That's how you roll?", "I can see you, you know?"]
+
+winningMessage = "\n\nCONGRATULATIONS!!! YOU WIN!!!\n\n"
+
+# == Invalid input feedback text
+
+illegalMove = ["What the hell do you think you're doing?!", "No. Just, no.", "Try again, dumbass...", "That's clearly not right.", "Do you even know what we are trying to do here..?!", "Ok.. Ok.. Look, I'll use small words to explain..", "Oh yeah! Great. Why don't you just roll your face across the keyboard as well..?!"]
