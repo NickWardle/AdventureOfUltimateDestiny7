@@ -159,7 +159,9 @@ def parseInput(tkns, actns, objs): # extract objects from (multiple word) tokeni
                         # add it to the list of commands we will return
                         returned_cmds.append(cmd_item)
                     
-                    # remove these from the list and go again
+                    # remove these from list and go again
+                    
+                    ## THIS IS NEW!
                     
                     
                 else: # malformed command
