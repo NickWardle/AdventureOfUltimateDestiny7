@@ -70,7 +70,7 @@ getCmds = ['get', 'take', 'pick up']
 putCmds = ['leave', 'drop', 'put down', 'put up there', 'put in', 'put']
 
 # interaction commands change the state of an object in inventory or location
-intCmds = ['open', 'close', 'move', 'get in']
+intCmds = ['open', 'close', 'move', 'get in', 'pick']
 
 # use commands consume one use of an object
 useCmds = ['use', 'drink', 'eat', 'attack', 'shoot', 'stab']

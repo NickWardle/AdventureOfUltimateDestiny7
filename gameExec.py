@@ -116,7 +116,7 @@ while WIN == False:
     # parse and return information from the tokenized input data
     myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, aCmds, objRefs)
     
-    print(myCmd, myObj, myTarget)
+    print("returned to gameExec with these:", myCmd, myObj, myTarget)
     
     ####  CHANGE DATA STRUCTURE FROM HERE TO USE PARSEINPUT() RETURN ####
     
