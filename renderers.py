@@ -24,6 +24,8 @@ def render_Text(d, t="default"): #generic text renderer
         
     elif t == 'cheat': #cheat command
         
+        temp = 'this is t {}'.format(t)
+        print(temp)
         # show all available movement commands for this location
         print(ss.inputFeedbackPre, "Available moves are", end=": ")
         tmp = []
@@ -94,7 +96,7 @@ def render_Text(d, t="default"): #generic text renderer
         
     elif t == 'already in inv': # trying to add an obj already in the inv
         print(ss.inputFeedbackPre, "You already have the", d.lower(), "in your inventory")
-    
+        
     elif t == 'examine': # part of controllers.useObject()
         
         # grab object name
@@ -107,6 +109,15 @@ def render_Text(d, t="default"): #generic text renderer
         
     elif t == 'default': # just render payload
         print(d)
+        
+
+def render_prompt(d, t):
+    
+    if t == 'default prompt':
+        return ss.inputQuestionPre + d + '\n' + ss.shortLnNewLine + '\n'
+    
+    elif t == 'did you mean':
+        return ss.inputQuestionPre + "Did you mean '" + d.lower() + "'? Y/N\n" + ss.shortLnNewLine + '\n'
 
 
 def render_objectActions(d, cmd, t):

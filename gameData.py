@@ -22,6 +22,11 @@ def init():
     CHEATER = False
     global EXIT
     EXIT = False
+    global REQCONF
+    REQCONF = False
+    global USERCONF
+    
+
 
 
 

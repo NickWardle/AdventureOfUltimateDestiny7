@@ -101,14 +101,17 @@ while WIN == False:
     uiData = {'search':allObjects, 'cheat':legalMoves, 'help':[gD.uiCmds, aCmds['objCmds']], 'exit':'', 'look':''}
     
     
-    # == CHECK INPUT =============================================
+    # == CHECK INPUT ==  BUILD PLAYER PROMPT  ===============
     
-    # build input prompt
-    prompt = ss.inputQuestionPre + gD.LOCDATA['locInputDesc'] + ' '
+    # build input prompt and wait for player input
+    if gD.REQCONF == False:
+        prompt = controllers.buildPrompt('default')
+        myInput = input(prompt)
+    elif gD.REQCONF == True:
+        prompt = controllers.buildPrompt('did you mean', gD.USERCONF)
+        myInput = input(prompt)
+        gD.REQCONF = False
     
-    # wait for player input
-    myInput = input(prompt).lower()
-    controllers.printText(ss.shortLnNewLine)
     
     # tokenise the input
     inputTokenized = controllers.tokenizeInput(myInput)
@@ -168,12 +171,8 @@ while WIN == False:
         for inputGroup in allLegalInputs:
             t += 1
             
-#            print(t, " inputGroup", inputGroup)
-            
             # check every command '' in the group list
             for ky in inputGroup:
-                
-#                print("matching input against", ky)
                 
                 # reset Target
                 myTarget = None

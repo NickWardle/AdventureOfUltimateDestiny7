@@ -23,6 +23,17 @@ def clearLocData():
     
     gD.LOCDATA = ''
 
+def buildPrompt(t, d=None):
+    
+    print("t", t, "d", d)
+    
+    if t == 'default':
+        return renderers.render_prompt(gD.LOCDATA['locInputDesc'], 'default prompt')
+    
+    elif t == 'did you mean':
+        return renderers.render_prompt(d, 'did you mean')
+    
+
 def printText(d, t="default"): # generic text printer
     
     if t == 'exit': #exit command
@@ -82,10 +93,11 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
     new_tokens = tks[c_pos:]
     user_conf = ' '.join(new_tokens)
     
-    # request confirmation of sanitised input from player
-    renderers.render_Text(user_conf, 'meant')
-    
-    
+    # return sanitised input and setup confirmation request prompt
+    print("3. confirm me this", user_conf)
+    gD.REQCONF = True
+    gD.USERCONF = user_conf
+
     
 
 def cmdLengthChecker(cmd_mtch, parsed_cmds):
@@ -171,14 +183,26 @@ def cmdChecker(tkns, parsed_cmds):
     
     
     if 'cmd1' not in parsed_cmds.keys():
-            print("ill check that")
-            cmdDidYouMeanThis(tkns, parsed_cmds)
-            
+        
+        # If parsed_cmds does NOT start with 'cmd1' then the
+        # input contained junk words before the command words
+        # check with the player what they really wanted to do first
+        
+        print("2. did you mean this")
+        cmdDidYouMeanThis(tkns, parsed_cmds)
+        return False
+        
     else: 
         
         # if there is more than one cmd word detected
         if len(parsed_cmds) > 1:
-                       
+            
+            #### NOTE the first command could STILL be a singleton!!! ###
+            # which means check_list will be empty (I think)
+            # so need to fix this assumption that multiple commands
+            # in input are not singletons plus more commands down-the-line
+            #####
+            
             # check for *sequential* matched cmds lists 
             ii = 1
             check_list = []
@@ -242,7 +266,7 @@ def cmdChecker(tkns, parsed_cmds):
                 ####AND THEN RUN THROUGH THE MATCHING AGAIN
                 ### WITH THE NEW TRUNCATED LIST OF CANDIDATES TO FIND 
                 ### SECOND COMMAND GROUPS TO RETURN
-                cmdChecker(parsed_cmds)
+                cmdChecker(None, parsed_cmds)
                 
             else: # malformed command
                 print("that wasn't a valid command")
@@ -307,21 +331,17 @@ def parseInput(tkns, actns, objs): # extract objects from (multiple word) tokeni
                             parsed_cmds[c] = [ind]
                     
        
-        # If parsed_cmds does NOT start with 'cmd1' then the
-        # input contained junk words before the command words
-        #
-        # check with the player what they really wanted to do first
-        
-        print(parsed_cmds.keys())
         
         # check that parsed cmds list!
+        print("1.", tkns, parsed_cmds)
         good_cmd = cmdChecker(tkns, parsed_cmds)
-        
-        print("successfully matched this command", good_cmd)
         
         if good_cmd != None:
             # add successfully found command to what we send back to gameExec
+            print("successfully matched this command", good_cmd)
             returned_cmds.append(good_cmd)
+        elif good_cmd == False:
+            print("USERCONF", gD.USERCONF)
         else:
             print("there were no valid commands matched in the input")
         
