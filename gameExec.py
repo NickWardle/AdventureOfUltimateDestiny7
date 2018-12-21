@@ -72,6 +72,9 @@ while WIN == False:
             for j in range(len(allObjects[i]['refs'])):
                 objRefs.append(allObjects[i]['refs'][j])
         
+    ####### DELETE AllLegalInputs - this chunk #########
+    ####### New legalInputs calculated below   ##########
+    
     # group all LEGALINPUTS into one library to match against
     # as individual 'command' entries
     # [legalMoves, objRefs, UI, actions]
@@ -94,6 +97,27 @@ while WIN == False:
             tmp.append(arr[i])
     allLegalInputs.append(tmp)  #4
     
+    ######### DELETE THE ABOVE once refactored in parseInputs() ####
+    
+    #### Supercedes AllLegalInputs calculated above ####
+    legalInputsA = {}
+    legalInputsB = {}
+    legalInputsC = {}
+    legalInputs = {}
+    
+#    allLegalMoves = []
+#    tmp = []
+#    for i in range(len(legalMoves)):
+#        for j in range(len(legalMoves[i])):
+#            tmp.append(legalMoves[i][j])
+#    allLegalMoves.append(tmp) #1 
+#    legalInputsA['legalMoves'] = allLegalMoves
+    legalInputsA['objRefs'] = objRefs
+    legalInputsB = gD.uiCmds
+    legalInputsC = gD.actionCmds
+    legalInputs = {**legalInputsA, **legalInputsB, **legalInputsC}
+    print("legalInputs", legalInputs)
+    
     
     # == SET UP DATA =============================================
     
@@ -104,24 +128,35 @@ while WIN == False:
     # == CHECK INPUT ==  BUILD PLAYER PROMPT  ===============
     
     # build input prompt and wait for player input
-    if gD.REQCONF == False:
+    if gD.PROMPT == False:
         prompt = controllers.buildPrompt('default')
         myInput = input(prompt)
-    elif gD.REQCONF == True:
+    elif gD.PROMPT == 'reqconf':
         prompt = controllers.buildPrompt('did you mean', gD.USERCONF)
         myInput = input(prompt)
-        gD.REQCONF = False
+        
     
     
     # tokenise the input
     inputTokenized = controllers.tokenizeInput(myInput)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, aCmds, objRefs)
+    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, aCmds, objRefs, legalInputs)
     
     print("returned to gameExec with these:", myCmd, myObj, myTarget)
     
-    ####  CHANGE DATA STRUCTURE FROM HERE TO USE PARSEINPUT() RETURN ####
+    # deal with returned information structures
+    
+    # perform actions, display feedback
+    
+    # catch errors?
+    
+    # return back to input for next loop
+    
+    
+    
+    
+    ############# Need to replicate all of this in parseInput ########
     
     # handle input commands
     if inputTokenized[0] == "use": 

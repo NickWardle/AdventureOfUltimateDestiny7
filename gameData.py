@@ -22,8 +22,8 @@ def init():
     CHEATER = False
     global EXIT
     EXIT = False
-    global REQCONF
-    REQCONF = False
+    global PROMPT
+    PROMPT = False
     global USERCONF
     
 

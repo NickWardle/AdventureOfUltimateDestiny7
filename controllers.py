@@ -95,7 +95,7 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
     
     # return sanitised input and setup confirmation request prompt
     print("3. confirm me this", user_conf)
-    gD.REQCONF = True
+    gD.PROMPT = 'reqconf'
     gD.USERCONF = user_conf
 
     
@@ -187,11 +187,18 @@ def cmdChecker(tkns, parsed_cmds):
         # If parsed_cmds does NOT start with 'cmd1' then the
         # input contained junk words before the command words
         # check with the player what they really wanted to do first
+        if gD.PROMPT == False:
+            print("2. did you mean this")
+            cmdDidYouMeanThis(tkns, parsed_cmds)
+            return False
         
-        print("2. did you mean this")
-        cmdDidYouMeanThis(tkns, parsed_cmds)
-        return False
-        
+        elif gD.PROMPT == 'reqconf': # require Y/N confirmation
+            print("only Y/N are valid inputs")
+            print("We got", tkns, parsed_cmds)
+            gD.PROMPT == False
+            return False
+            
+            
     else: 
         
         # if there is more than one cmd word detected
@@ -292,75 +299,83 @@ def cmdChecker(tkns, parsed_cmds):
 
 
 
-def parseInput(tkns, actns, objs): # extract objects from (multiple word) tokenized input
+def parseInput(tkns, actns, objs, legalinputs): # extract objects from tokenized input
     
-    #############################
-    # take into account pseudo-cmd2 cases
-    # format: cmd-obj-'with/on/in'-tgt
-    ###############################
+    #### we don't need to pass actns in here once this is
+    #### refactored for all command checking (using legalinputs)
     
     parsed_cmds = {}
     returned_cmds = []
     obj = None
     tgt = None
     
-    if len(tkns) > 1: # single word inputs handled later, below
+    i = 0
+    # for each word in the input
+    for w in tkns:
         
-        i = 0
-        # for each word
-        for w in tkns:
-            
-            i = i + 1
-            c = "cmd" + str(i)
-            
-            # match against COMMANDS ======
-            for j, k in actns.items():
-                # for each cmd in each cmd group
-                for l in k:
-                    # is the word in the cmd group
-                    if re.search(w, l):
-                        # group up matches into 'cmds'
-                        c = "cmd" + str(i)
-                        # combine cmdgrp name - match index as label
-                        ind = j + "-" + str(k.index(l))
-                        
-                        # build list of matches                        
-                        if c in parsed_cmds.keys():
-                            parsed_cmds[c].append(ind)
-                        else:
-                            parsed_cmds[c] = [ind]
+        i = i + 1
+        c = "cmd" + str(i)
+        
+        ### Need a separate path to handle commands that are not actions
+        # bascially need to pass AllLegalInputs from gameExec to here
+        # not just aCmds (as actns)
+        # and replicate the command parsing from 177 in gameExec
+        # not forgetting the multipart command bit at 137
+        # so as to take into account pseudo-cmd2 cases
+        # format: cmd-obj-'with/on/in'-tgt
+        ### This bit needs major amplification
+        
+        
+        ##### GOT TO THIS BIT !!!!!              ##########
+        # Now we are passing ALL legal inputs for parsing #
+        # we need to not assume that 'cmd1' is an action  #
+        # command, as the check_list now includes obj refs #
+        # and everything! so, build this out to check     #
+        # to check against every type of input and parse #
+        # out useful references for handling back in gameExec #
+        #############   SIMPLES :)    #######################
+        
+        
+#        for j, k in actns.items():
+        for j, k in legalinputs.items():
+            # for each cmd in each cmd group
+            for l in k:
+                # is the word in the cmd group
+                if re.search(w, l):
+                    # group up matches into 'cmds'
+                    c = "cmd" + str(i)
+                    # combine cmdgrp name - match index as label
+                    ind = j + "-" + str(k.index(l))
                     
-       
-        
-        # check that parsed cmds list!
-        print("1.", tkns, parsed_cmds)
-        good_cmd = cmdChecker(tkns, parsed_cmds)
-        
-        if good_cmd != None:
-            # add successfully found command to what we send back to gameExec
-            print("successfully matched this command", good_cmd)
-            returned_cmds.append(good_cmd)
-        elif good_cmd == False:
-            print("USERCONF", gD.USERCONF)
-        else:
-            print("there were no valid commands matched in the input")
-        
-            
-        # match against OBJECTS ======
-        if w in objs:
-            obj = w
+                    # build list of MATCHES                        
+                    if c in parsed_cmds.keys():
+                        parsed_cmds[c].append(ind)
+                    else:
+                        parsed_cmds[c] = [ind]
+                
     
-        # SET myTarget
+    # Now check that parsed cmds list!
+    print("1.", tkns, parsed_cmds)
+    good_cmd = cmdChecker(tkns, parsed_cmds)
     
-        print("check for a target after myObject")
+    if good_cmd != None:
+        # add successfully found command to what we send back to gameExec
+        print("successfully matched this command", good_cmd)
+        returned_cmds.append(good_cmd)
+    elif good_cmd == False:
+        print("USERCONF", gD.USERCONF)
+    else:
+        print("there were no valid commands matched in the input")
     
-    else: # single word input
         
-        print("handling single word input")
-        # check if it is a valid command
-        
-        # if it is append it to returned_cmds
-        
+    # match against OBJECTS ======
+    if w in objs:
+        obj = w
+
+    # SET myTarget
+
+    print("check for a target after myObject")
+
     
     # RETURN all of the things!!
 #    return cmd, obj, tgt
