@@ -6,6 +6,12 @@ Created on Fri Jul 13 09:24:51 2018
 @author: nick.wardle
 """
 
+# == GLOBAL: SHOW DEBUG MESSAGES? =====================================
+debug = True
+#debug = False
+
+
+
 # == SETTINGS & TEXT STRINGS FOR THE GAME =====================================
 
 # == Input text prefixes

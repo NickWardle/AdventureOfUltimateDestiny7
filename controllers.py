@@ -4,11 +4,13 @@ Created on Fri Jul 13 09:24:51 2018
 
 @author: nick.wardle
 """
+import debugger as de
 import gameData as gD
 import renderers
 import transformers as tfs
 import re
 from nltk.tokenize import word_tokenize
+
 #import errorHandler
 
 # == INITIALISE DATA =================================================
@@ -25,7 +27,7 @@ def clearLocData():
 
 def buildPrompt(t, d=None):
     
-    print("t", t, "d", d)
+#    de.bug("t", t, "d", d)
     
     if t == 'default':
         return renderers.render_prompt(gD.LOCDATA['locInputDesc'], 'default prompt')
@@ -53,7 +55,7 @@ def changeLoc(loc): #generic location changer
         gD.LOCDATA = locDb[loc]
         
     else:
-        print("Location not in locDb")
+        de.bug("Location not in locDb")
     
     # show thinkingDots
     print('\n. . . . L O A D I N G . . . .\n')
@@ -85,19 +87,27 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
     for a, b in pdl.items():
         c_lst.append(a)
         
-    c_pos = c_lst[0][3:]
-    c_pos = int(c_pos) - 1
+    # handle empty c_lst - which could mean that the input was NONE
+    # i.e. player probably just pressed RETURN
+    if len(c_lst) > 0:
+        c_pos = c_lst[0][3:]
+        c_pos = int(c_pos) - 1
     
-    # remove all tokens from inputTokenized list before first
-    # parsed_cmd index    
-    new_tokens = tks[c_pos:]
-    user_conf = ' '.join(new_tokens)
-    
-    # return sanitised input and setup confirmation request prompt
-    print("3. confirm me this", user_conf)
-    gD.PROMPT = 'reqconf'
-    gD.USERCONF = user_conf
-
+        # remove all tokens from inputTokenized list before first
+        # parsed_cmd index    
+        new_tokens = tks[c_pos:]
+        user_conf = ' '.join(new_tokens)
+        
+        # return sanitised input and setup confirmation request prompt
+        de.bug("3. confirm me this", user_conf)
+        gD.PROMPT = 'reqconf'
+        gD.USERCONF = user_conf
+        
+    else: # just spawn default PROMPT again
+        
+        de.bug("no input, just respawn default PROMPT")
+        gD.PROMPT = False
+        gD.USERCONF = None
     
 
 def cmdLengthChecker(cmd_mtch, parsed_cmds):
@@ -105,7 +115,9 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds):
     # verify that the input contains the right number of 
     # cmd words to complete a valid command phrase
     
-    if cmd_mtch == None:
+    de.bug("sending this to cmdlenChk", cmd_mtch)
+    
+    if cmd_mtch == None or cmd_mtch == {}:
         
         # if cmd_mtch is not given, then there is only ONE
         # command word in the input, so the correct length
@@ -113,22 +125,34 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds):
         # must be ONE word long
         #
         # So find the command in the parsed_cmds list that 
-        # only has ONE word and that is the valid_cmd with 
-        # the correct length to return
+        # only has ONE word and then check the number of letters
+        # in input and command match exactly
         
-        print("singleton command, checking for length=1 valid commands in", parsed_cmds)
+        de.bug("singleton command, checking for length=1 valid commands in", parsed_cmds)
         
+        ####################################
+        ########## GOT TO HERE #############
+        #### SEND 'e' AS ONE WORD CMD ######
+        ### ASSUMPTION HERE it will be 'cmd1', could be mov1 or obj1
+        ### Can we use dict.values() instead as it is only one item in dict?
         for rf in parsed_cmds['cmd1']:
             rf_elems = rf.split("-")
             
+            # find the appropriate cmd_list
+            for cl in gD.inputCollection:
+                for a, b in cl.items():
+                    if rf_elems[0] == a:
+                        cmd_wrds = b[int(rf_elems[1])]
+                        
             # count the number of words
-            cmd_lst = gD.actionCmds[rf_elems[0]]
-            cmd_wrds = cmd_lst[int(rf_elems[1])]
             cmd_len = len(tokenizeInput(cmd_wrds))
             
             if cmd_len == 1:
                 
-                print("valid command phrase matched:", cmd_wrds, "as", rf)
+                # count letters 
+                de.bug("word length is", len(cmd_wrds))
+                
+#                de.bug("valid command phrase matched:", cmd_wrds, "as", rf)
                 return rf
             
         return False
@@ -144,7 +168,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds):
         cmd_lst = gD.actionCmds[cmd_elems[0]]
         cmd_wrds = cmd_lst[int(cmd_elems[1])]
         cmd_len = len(tokenizeInput(cmd_wrds))
-        print("cmd wrds '", cmd_wrds, "' cmd len", cmd_len)
+        de.bug("cmd wrds '", cmd_wrds, "' cmd len", cmd_len)
         
         # require this many sequential parsed_cmds.keys() matches
         q = 1
@@ -158,7 +182,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds):
             if myKey in parsed_cmds.keys():
                 
                 if cmd_item not in parsed_cmds[myKey]:
-                    print("missing in", myKey)
+                    de.bug("missing in", myKey)
                     cmd_valid = False
             
             else: # failed to match full length, invalid command
@@ -170,86 +194,146 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds):
         # if yes, this is our first command
         if cmd_valid == True:
             
-            print("valid command phrase matched:", cmd_wrds, "as", cmd_item)
+            de.bug("valid command phrase matched:", cmd_wrds, "as", cmd_item)
             return cmd_item
         
         else:
             
             return False
         
+        
     
 
 def cmdChecker(tkns, parsed_cmds):
     
-    
-    if 'cmd1' not in parsed_cmds.keys():
+    if 'cmd1' not in parsed_cmds.keys() or gD.PROMPT == 'reqconf':
         
         # If parsed_cmds does NOT start with 'cmd1' then the
         # input contained junk words before the command words
         # check with the player what they really wanted to do first
+        # and automatically resend command words if correct to do so
+        
         if gD.PROMPT == False:
-            print("2. did you mean this")
             cmdDidYouMeanThis(tkns, parsed_cmds)
             return False
         
         elif gD.PROMPT == 'reqconf': # require Y/N confirmation
-            print("only Y/N are valid inputs")
-            print("We got", tkns, parsed_cmds)
-            gD.PROMPT == False
+            
+            if tkns[0].lower() == "y": # if y or Y entered
+                gD.PROMPT = 'autoresend'
+                
+            else: # if anything else entered treat it as a NO
+                gD.USERCONF = None
+                gD.PROMPT = False
+
             return False
             
-            
-    else: 
+    else: # check parsed_cmds as normal
         
-        # if there is more than one cmd word detected
+        # if there is more than one potential match found
         if len(parsed_cmds) > 1:
             
             #### NOTE the first command could STILL be a singleton!!! ###
-            # which means check_list will be empty (I think)
+            # which means cmd_check_list will be empty (I think)
             # so need to fix this assumption that multiple commands
             # in input are not singletons plus more commands down-the-line
             #####
             
-            # check for *sequential* matched cmds lists 
+            # check for *sequential* matched cmds lists
+            # and record first occurences of matches for each cmd type
             ii = 1
-            check_list = []
+            cmd_check_list = []
+            mov_check_list = []
+            obj_check_list = []
+            firsts = {'c':None, 'm':None, 'o':None}
             trim_list = []
             for p in parsed_cmds:
+                m = "mov" + str(ii)
                 c = "cmd" + str(ii)
+                o = "obj" + str(ii)
                 if p == c:
+                    # record first occurence of a 'cmd'
+                    if firsts['c'] == None:
+                        firsts['c'] = ii
                     # sequential, add to 'check list' and continue..
                     if ii > 1:
-                        check_list.append(parsed_cmds[c])
+                        cmd_check_list.append(parsed_cmds[c])
                         trim_list.append(c)
                     ii = ii + 1
+                    
+                elif p == m:
+                    # record first occurence of a 'mov'
+                    if firsts['m'] == None:
+                        firsts['m'] = ii
+                    # sequential, add to 'check list' and continue..
+                    if ii > 1:
+                        mov_check_list.append(parsed_cmds[m])
+                        trim_list.append(m)
+                    ii = ii + 1
+                    
+                elif p == o:
+                    # record first occurence of a 'obj'
+                    if firsts['o'] == None:
+                        firsts['o'] = ii
+                    # sequential, add to 'check list' and continue..
+                    if ii > 1:
+                        obj_check_list.append(parsed_cmds[o])
+                        trim_list.append(o)
+                    ii = ii + 1
+                    
                 else:
-                    # sequence broken
-                    cc = "cmd" + str(ii-1)
-                    print("sequential matches up to", cc)
-            
-            
-            print("cmds check_list", check_list)
+                    # no sequential matches found, or sequence was broken
+                    cc = "match" + str(ii-1)
+                    if (ii-1) > 1:
+                        de.bug("sequential matches up to", cc)
+                    else:
+                        de.bug("command", p, "is a singleton with multiple potential matching commands. Need to check word length")
+                        
+                        
+            # check 'check lists'
+            de.bug("cmds cmd_check_list", cmd_check_list)
+            de.bug("cmds mov_check_list", mov_check_list)
+            de.bug("cmds obj_check_list", obj_check_list)
+            de.bug("firsts", firsts)
             
             # check if any cmds in any cmd lists in the 'check list'
             # match any other cmds in any of the other cmd lists 
-            # *unpack 'check_list' as the arguments of the intersection check
-            cmd_mtch = set(parsed_cmds['cmd1']).intersection(*check_list)
-            print("matched input against these cmds", cmd_mtch)
+            # *unpack 'cmd_check_list' as the arguments of the intersection check
             
-            # if any matching commands
-            if len(cmd_mtch) > 0:
+            cmd_mtch_c = {}
+            cmd_mtch_m = {}
+            cmd_mtch_o = {}
+            
+            if len(cmd_check_list) > 0:
+                c_key = 'cmd' + str(firsts['c'])
+                cmd_mtch_c = set(parsed_cmds[c_key]).intersection(*cmd_check_list)
+            
+            if len(mov_check_list) > 0:
+                m_key = 'mov' + str(firsts['m'])
+                cmd_mtch_m = set(parsed_cmds[m_key]).intersection(*mov_check_list)
                 
+            if len(obj_check_list) > 0:
+                o_key = 'obj' + str(firsts['o'])
+                cmd_mtch_o = set(parsed_cmds[o_key]).intersection(*obj_check_list)
+            
+            
+            de.bug("matched input against these cmds", cmd_mtch_c, cmd_mtch_m, cmd_mtch_o)
+            
+            # for ANY matching commands
+            cmd_mtchs = [cmd_mtch_c, cmd_mtch_m, cmd_mtch_o]
+            
+            for ls in cmd_mtchs:
                 # check if the matched command is the correct length
                 # to match a valid command in the database
-                valid_cmd = cmdLengthChecker(cmd_mtch, parsed_cmds)
-                print("matched cmd is", valid_cmd)
+                valid_cmd = cmdLengthChecker(ls, parsed_cmds)
+                de.bug("matched cmd is", valid_cmd)
     
                 if valid_cmd != False:
                     # RETURN the cmd to be added 
                     # to the list of commands we will return to gameExec
                     return valid_cmd
                 else:
-                    print("not enough matches to complete command phrase - invalid command")
+                    de.bug("not enough matches to complete command phrase - invalid command")
     
     
     
@@ -261,14 +345,15 @@ def cmdChecker(tkns, parsed_cmds):
                 #############################################
                 
                 # remove these from list and go again
-                print("cmd list pre trimming", parsed_cmds)
+                de.bug("cmd list pre trimming", parsed_cmds)
                     
+                ### ASSUMPTION HERE it will be cmd1, could be mov1 or obj1
                 trim_list.insert(0, 'cmd1')
                 for i in trim_list:
                     parsed_cmds.pop(i)
                 
-                print("trim list", trim_list)
-                print("trimmed remaining cmds", parsed_cmds)
+                de.bug("trim list", trim_list)
+                de.bug("trimmed remaining cmds", parsed_cmds)
                 
                 ####AND THEN RUN THROUGH THE MATCHING AGAIN
                 ### WITH THE NEW TRUNCATED LIST OF CANDIDATES TO FIND 
@@ -276,7 +361,7 @@ def cmdChecker(tkns, parsed_cmds):
                 cmdChecker(None, parsed_cmds)
                 
             else: # malformed command
-                print("that wasn't a valid command")
+                de.bug("that wasn't a valid command")
             
         
         elif len(parsed_cmds) == 1: # only 1 command and it's a singleton
@@ -288,33 +373,31 @@ def cmdChecker(tkns, parsed_cmds):
             if valid_cmd != False:
                 # RETURN the cmd to be added 
                 # to the list of commands we will return to gameExec
-                print("only one command found", parsed_cmds, "returning this", valid_cmd)
+                de.bug("only one command found", parsed_cmds, "returning this", valid_cmd)
                 return valid_cmd
             else:
-                print("singleton command found, but is not valid")
+                de.bug("singleton command found, but is not valid")
             
         else: # parsed_cmds is empty
             
-            print("no commands found")
+            de.bug("no commands found")
 
 
 
-def parseInput(tkns, actns, objs, legalinputs): # extract objects from tokenized input
-    
-    #### we don't need to pass actns in here once this is
-    #### refactored for all command checking (using legalinputs)
+def parseInput(tkns, legalinputs, objs): # extract objects from tokenized input
     
     parsed_cmds = {}
     returned_cmds = []
     obj = None
     tgt = None
+    type_track = []
     
     i = 0
     # for each word in the input
     for w in tkns:
         
         i = i + 1
-        c = "cmd" + str(i)
+        
         
         ### Need a separate path to handle commands that are not actions
         # bascially need to pass AllLegalInputs from gameExec to here
@@ -325,26 +408,44 @@ def parseInput(tkns, actns, objs, legalinputs): # extract objects from tokenized
         # format: cmd-obj-'with/on/in'-tgt
         ### This bit needs major amplification
         
+        # check against every type of input and parse 
+        # out useful references for handling back in gameExec  
         
-        ##### GOT TO THIS BIT !!!!!              ##########
-        # Now we are passing ALL legal inputs for parsing #
-        # we need to not assume that 'cmd1' is an action  #
-        # command, as the check_list now includes obj refs #
-        # and everything! so, build this out to check     #
-        # to check against every type of input and parse #
-        # out useful references for handling back in gameExec #
-        #############   SIMPLES :)    #######################
-        
-        
-#        for j, k in actns.items():
         for j, k in legalinputs.items():
             # for each cmd in each cmd group
             for l in k:
                 # is the word in the cmd group
                 if re.search(w, l):
-                    # group up matches into 'cmds'
-                    c = "cmd" + str(i)
+                    
+                    # complex bit: if the type of command changes
+                    # between m, o, and c for the SAME word in tkns
+                    # artificially bump i to avoid duplicate index numbers
+                    type_track.append(j)
+                    if len(type_track) > 1:
+                        
+                        if type_track[len(type_track)-1] == 'm':
+                            if type_track[len(type_track)-2] != 'm':
+                                i = i + 1
+                                
+                        if type_track[len(type_track)-1] == 'o':
+                            if type_track[len(type_track)-2] != 'o':
+                                i = i + 1
+                                
+                        if type_track[len(type_track)-1] != 'o':
+                            if type_track[len(type_track)-1] != 'm':
+                                if type_track[len(type_track)-2] == 'o' or type_track[len(type_track)-2] == 'm':
+                                    i = i + 1
+                    
+                    # handle each of the command types
+                    if j == "m":
+                        c = "mov"
+                    elif j == "o":
+                        c = "obj"
+                    else:
+                        c = "cmd"
+                    
                     # combine cmdgrp name - match index as label
+                    c = c + str(i)
                     ind = j + "-" + str(k.index(l))
                     
                     # build list of MATCHES                        
@@ -353,32 +454,34 @@ def parseInput(tkns, actns, objs, legalinputs): # extract objects from tokenized
                     else:
                         parsed_cmds[c] = [ind]
                 
-    
+        
+        # match against OBJECTS ======
+        ###### Probably NEEDS IMPROVING HERE #############
+        if w in objs:
+            obj = w
+
+        # SET myTarget
+        de.bug("check for a target after myObject")
+
+        
     # Now check that parsed cmds list!
-    print("1.", tkns, parsed_cmds)
+    de.bug("1.", tkns, parsed_cmds)
     good_cmd = cmdChecker(tkns, parsed_cmds)
     
-    if good_cmd != None:
+    if good_cmd == False:
+        de.bug("USERCONF", gD.USERCONF)
+        de.bug("PROMPT", gD.PROMPT)
+    elif good_cmd != None:
         # add successfully found command to what we send back to gameExec
-        print("successfully matched this command", good_cmd)
+        de.bug("successfully matched this command", good_cmd)
         returned_cmds.append(good_cmd)
-    elif good_cmd == False:
-        print("USERCONF", gD.USERCONF)
-    else:
-        print("there were no valid commands matched in the input")
     
-        
-    # match against OBJECTS ======
-    if w in objs:
-        obj = w
-
-    # SET myTarget
-
-    print("check for a target after myObject")
-
+    else:
+        de.bug("there were no valid commands matched in the input")
+    
+    
     
     # RETURN all of the things!!
-#    return cmd, obj, tgt
     return returned_cmds, obj, tgt
 
 
@@ -521,8 +624,8 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                     
                                     # check object STATE
                                     objectState(o)
-                                    print("2nd command", cmd2)
-                                    print("use key on -", theTgt)
+                                    de.bug("2nd command", cmd2)
+                                    de.bug("use key on -", theTgt)
                                     #use key on box
                                     
     #                                renderers.render_objectActions(o, cmd, cmd)
@@ -580,12 +683,12 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                     
             # handle input reference to an object that is not at this loc
             if missing_object == True:
-                print('missing object')
+                de.bug('missing object')
                 renderers.render_Text(theObj, 'missing object')
     
         else:
             # no objects at all at this loc
-            print('no objects')
+            de.bug('no objects')
             renderers.render_Text(theObj, 'missing object')
     
     else:
@@ -596,8 +699,8 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
     
 def objectState(o): # what happens after the useObject action is successful?
     
-#    print(eval(o))
-#    print('' + o)
+#    de.bug(eval(o))
+#    de.bug('' + o)
     test_o = tfs.namestr(o, globals())
     print(gD.World_frame.loc[test_o])
     
@@ -609,11 +712,11 @@ def objectState(o): # what happens after the useObject action is successful?
                     if tt == 'move':
                         # add the new move to the legal moves for the location
                         # render a message to the player about this
-                        print("new route available")
+                        de.bug("new route available")
                     elif tt == 'object':
                         # add the new object to the objects in the location
                         # render a message to the player about this
-                        print("new object visible")
+                        de.bug("new object visible")
     
 
 

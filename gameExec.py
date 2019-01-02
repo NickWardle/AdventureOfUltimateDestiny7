@@ -4,7 +4,7 @@ Created on Fri Jul 13 09:24:51 2018
 
 @author: nick.wardle
 """
-
+import debugger as de
 import gameData as gD
 import settings as ss
 import controllers
@@ -105,18 +105,17 @@ while WIN == False:
     legalInputsC = {}
     legalInputs = {}
     
-#    allLegalMoves = []
-#    tmp = []
-#    for i in range(len(legalMoves)):
-#        for j in range(len(legalMoves[i])):
-#            tmp.append(legalMoves[i][j])
-#    allLegalMoves.append(tmp) #1 
-#    legalInputsA['legalMoves'] = allLegalMoves
-    legalInputsA['objRefs'] = objRefs
+    allLegalMoves = []
+    tmp = []
+    for i in legalMoves:
+        for j in i:
+            allLegalMoves.append(j)
+    legalInputsA['m'] = allLegalMoves
+    legalInputsA['o'] = objRefs
     legalInputsB = gD.uiCmds
     legalInputsC = gD.actionCmds
-    legalInputs = {**legalInputsA, **legalInputsB, **legalInputsC}
-    print("legalInputs", legalInputs)
+    legalInputs = {**legalInputsC, **legalInputsB, **legalInputsA}
+    de.bug("legalInputs", legalInputs)
     
     
     # == SET UP DATA =============================================
@@ -125,25 +124,27 @@ while WIN == False:
     uiData = {'search':allObjects, 'cheat':legalMoves, 'help':[gD.uiCmds, aCmds['objCmds']], 'exit':'', 'look':''}
     
     
-    # == CHECK INPUT ==  BUILD PLAYER PROMPT  ===============
+    ##### == CHECK INPUT ==  BUILD PLAYER PROMPT  ========= ######
     
-    # build input prompt and wait for player input
-    if gD.PROMPT == False:
+    if gD.PROMPT == False: # default input prompt
         prompt = controllers.buildPrompt('default')
         myInput = input(prompt)
-    elif gD.PROMPT == 'reqconf':
+    elif gD.PROMPT == 'reqconf': # require Y/N reconfirmation
         prompt = controllers.buildPrompt('did you mean', gD.USERCONF)
         myInput = input(prompt)
+    elif gD.PROMPT == 'autoresend': # no prompt, auto-resubmit commands
+        gD.PROMPT = False
+        myInput = gD.USERCONF
         
-    
+    ##############################################################
     
     # tokenise the input
     inputTokenized = controllers.tokenizeInput(myInput)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, aCmds, objRefs, legalInputs)
+    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, legalInputs, objRefs)
     
-    print("returned to gameExec with these:", myCmd, myObj, myTarget)
+    de.bug("returned to gameExec with these:", myCmd, myObj, myTarget)
     
     # deal with returned information structures
     
@@ -195,6 +196,15 @@ while WIN == False:
         # reset subsequent commands
         myObj = None
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # input OK flag for catching illegal input errors
     inpOK = False
     
@@ -220,7 +230,17 @@ while WIN == False:
     
                     inpOK = True
                     
-                    print(t)
+                    de.bug(t)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
                     # action the move
                     if t == 1: #legal moves
@@ -239,7 +259,7 @@ while WIN == False:
                         if moveDest != '':
                             controllers.changeLoc(moveDest[ind])
                         else:
-                            print("this cmd doesn't change our location")
+                            de.bug("this cmd doesn't change our location")
                                                     
 #                    elif t == 2: #illegal moves
 #    
@@ -262,7 +282,7 @@ while WIN == False:
                         controllers.printText(uiData[myInput], myInput)
     
                     elif t == 4: #action command
-                        print("move:", myInput, "cmd2:", myCmd2, "myObj:", myObj, "myTgt:", myTarget)
+#                        de.bug("move:", myInput, "cmd2:", myCmd2, "myObj:", myObj, "myTgt:", myTarget)
                         controllers.useObject(myInput, myCmd2, myObj, myTarget, allObjects)
               
             

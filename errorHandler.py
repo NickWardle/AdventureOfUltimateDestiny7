@@ -5,6 +5,7 @@ Created on Fri Jul 13 09:24:51 2018
 
 @author: nick.wardle
 """
+import debugger as de
 import gameData as gD
 import settings as ss
 import renderers
@@ -21,7 +22,7 @@ def inputError(loc=0): #optional location param
     
 
 def throwError(s, dd):
-    print("we are in throwError() with this data: ", dd)
+    de.bug("we are in throwError() with this data: ", dd)
     # error types and data truths
     theTruth = {'uiSpawn':gD.uiCmds}
     

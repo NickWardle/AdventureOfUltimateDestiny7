@@ -9,6 +9,7 @@ Created on Fri Jul 13 09:24:51 2018
 import pandas as pd
 import numpy as np
 
+
 # == GLOBALS ============================================================
 
 def init():
@@ -26,8 +27,6 @@ def init():
     PROMPT = False
     global USERCONF
     
-
-
 
 
 # def gameStory - adventure chapters, progression spine
@@ -55,6 +54,7 @@ ignoreWords = ['the', 'to', 'a', 'and']
 # all general UI commands    
 generalCmds = ['look', 'search', 'help', 'cheat', 'exit']
 
+#### UI commands Dictionary object ###########
 uiCmds = {'generalCmds':generalCmds}
 
 
@@ -66,7 +66,7 @@ uiCmds = {'generalCmds':generalCmds}
 # NOTE changing command words will affect OBJECTS that list them
 
 # object commands interact with objects without changing the world
-objCmds = ['look at', 'examine']
+objCmds = ['look at', 'examine', 'e']
 
 # get commands add an object to player inventory
 getCmds = ['get', 'take', 'pick up']
@@ -80,10 +80,17 @@ intCmds = ['open', 'close', 'move', 'get in', 'pick']
 # use commands consume one use of an object
 useCmds = ['use', 'drink', 'eat', 'attack', 'shoot', 'stab']
 
-#### Commands Dictionary object: all all command arrays
+#### ACTION commands Dictionary object ###########
 actionCmds = {'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
 
+################################################
+######## INPUT COLLECTION List #################
+# EVERY Dictionary object must be in this List so it can be checked for
+# in controllers.cmdLengthChecker()
+inputCollection = [uiCmds, actionCmds]
 
+################################################
+################################################
 
 # == CHARACTER INVENTORY ===============================================
 

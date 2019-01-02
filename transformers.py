@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+import debugger as de
 import gameData as gD
 
 ## == Helpful code snippets to transform data and return it
@@ -43,7 +42,7 @@ def objPermissions(d): # access control to certain objects
             # match against each type
             if t == "locked_by":
                 
-                print("checking lock perms")
+                de.bug("checking lock perms")
                 # check if player has required object in their inventory
                 for cat, objs in gD.PLAYERINV.items():
                     if o in objs:

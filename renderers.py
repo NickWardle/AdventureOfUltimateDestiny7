@@ -4,6 +4,7 @@ Created on Fri Jul 13 09:24:51 2018
 
 @author: nick.wardle
 """
+import debugger as de
 import random
 import transformers as tfs
 import settings as ss
@@ -25,7 +26,7 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'cheat': #cheat command
         
         temp = 'this is t {}'.format(t)
-        print(temp)
+        de.bug(temp)
         # show all available movement commands for this location
         print(ss.inputFeedbackPre, "Available moves are", end=": ")
         tmp = []
