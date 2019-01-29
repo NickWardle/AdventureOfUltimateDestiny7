@@ -26,6 +26,7 @@ def init():
     global PROMPT
     PROMPT = False
     global USERCONF
+    USERCONF = False
     
 
 
@@ -83,14 +84,8 @@ useCmds = ['use', 'drink', 'eat', 'attack', 'shoot', 'stab']
 #### ACTION commands Dictionary object ###########
 actionCmds = {'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
 
-################################################
-######## INPUT COLLECTION List #################
-# EVERY Dictionary object must be in this List so it can be checked for
-# in controllers.cmdLengthChecker()
-inputCollection = [uiCmds, actionCmds]
 
-################################################
-################################################
+
 
 # == CHARACTER INVENTORY ===============================================
 

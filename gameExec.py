@@ -142,7 +142,7 @@ while WIN == False:
     inputTokenized = controllers.tokenizeInput(myInput)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, legalInputs, objRefs)
+    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, legalInputs)
     
     de.bug("returned to gameExec with these:", myCmd, myObj, myTarget)
     
