@@ -291,8 +291,10 @@ while WIN == False:
         break
 
     # INPUT NOT RECOGNISED - feedback and fall back to the top to input()
-    if inpOK != True:
-        errorHandler.inputError()
+    # Unless this is part of an automatic User Prompt Loop
+    if gD.PROMPT == False:
+        if inpOK != True:
+            errorHandler.inputError()
 
 
 # WIN = True? Have you won the game??

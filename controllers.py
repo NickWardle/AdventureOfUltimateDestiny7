@@ -91,11 +91,12 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
     # handle empty c_lst - which could mean that the input was NONE
     # i.e. player probably just pressed RETURN
     if len(c_lst) > 0:
+        # get an integer for every cmd+n keys in parsed list
         c_pos = c_lst[0][3:]
         c_pos = int(c_pos) - 1
     
-        # remove all tokens from inputTokenized list before first
-        # parsed_cmd index    
+        # remove all (junk word) tokens from inputTokenized list that appear 
+        # before the first valid parsed_cmd     
         new_tokens = tks[c_pos:]
         user_conf = ' '.join(new_tokens)
         
@@ -205,17 +206,19 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
     # and automatically resend commands if correct to do so
     junk_wrds = False
     for k in parsed_cmds.keys():
-        de.bug(str(key_num), k[-1])
+        de.bug("checking for junk words", str(key_num), k[-1])
         if str(key_num) in k[-1]:
             break
         else:
             junk_wrds = True
     
+    # handle finding junk words (above) or second pass as a "reqconf"
     if junk_wrds == True or gD.PROMPT == 'reqconf':
         
         if gD.PROMPT == False:
             cmdDidYouMeanThis(tkns, parsed_cmds)
-            return False
+            # return both p_cmds and good_cmd as False to parseInput()
+            return False, False
         
         elif gD.PROMPT == 'reqconf': # require Y/N confirmation
             
@@ -225,8 +228,9 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             else: # if anything else treat it as a NO (bcoz 'n' = 'north')
                 gD.USERCONF = None
                 gD.PROMPT = False
-
-            return False
+            
+            # return both p_cmds and good_cmd as False to parseInput()
+            return False, False
             
     else: # check parsed_cmds as normal
         
@@ -431,6 +435,8 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
                                     i = i + 1
                     
                     # handle each of the command types
+                    # because move and object don't have
+                    # explicit labels for j, unlike cmds
                     if j == "m":
                         c = "mov"
                     elif j == "o":
@@ -438,8 +444,49 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
                     else:
                         c = "cmd"
                     
+                    ####### PROBLEM #########################
+                    # calling things cmd1 and obj3 is 
+                    # confusing because the number is the 
+                    # position of the token, not the number of
+                    # occurences of that type of command/object
+                    # ############
+                    # Need to change it to: 1-cmd and 3-obj
+                    # for all cmds and then find the places that 
+                    # strip an index off (like in wrdChecker for junk 
+                    # words) and re-do the index stripping code
+
+                    
                     # combine cmdgrp name - match index as label
                     c = c + str(i)
+
+                    ###### PROBLEM ############################
+                    # this works fine for commands, but not objects
+                    # simply iterating through and labelling 
+                    # every object word found as o-1, o-2, o-3
+                    # is not helpful. Need to send the list to 
+                    # an ObjectChecker at this point and then
+                    # return a valid list of objects for the 
+                    # location or the player inventory
+                    #
+                    
+                    ##### GOT TO HERE NUMBER TWO ###########
+                    # But I think I need to start here really !! 
+                    ###### SUGGESTION #######################
+                    # Rename myTarget in gameExec to myVia
+                    # so that you have a CMD that affects an OBJ
+                    # with an optional VIA
+                    # e.g. open the box with the red key
+                    # myCmd = open
+                    # myObj = box
+                    # myVia = red key
+                    # e.g. put the red key in the box
+                    # myCmd = put
+                    # myObj = red key
+                    # myVia = box
+                    
+                    # combine j and the index of k as valid
+                    # matching cmds
+                    
                     ind = j + "-" + str(k.index(l))
                     
                     # build list of MATCHES                        
@@ -452,12 +499,12 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
         # as this will find all objects and Targets instead
         
         # find the object(s)
-        if w in legalinputs['o']:
-            de.bug("object is", w)
+#        if w in legalinputs['o']:
+#            de.bug("object is", w)
 #            obj = w
 
         # SET myTarget
-        de.bug("check for a target after myObject")
+#        de.bug("check for a target after myObject")
         
         ###############################################################
         
@@ -543,8 +590,8 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     else:
         de.bug("there were no valid commands matched in the input")
     
-    
-    # Note: removed obj finding code above here. obj always == None
+    ########################################
+    # Note: I removed obj finding code above here. obj always == None
     # RETURN all of the things!!
     return returned_cmds, obj, tgt
 
