@@ -142,9 +142,22 @@ while WIN == False:
     inputTokenized = controllers.tokenizeInput(myInput)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, myTarget = controllers.parseInput(inputTokenized, legalInputs)
+    # so that you have a CMD that affects an OBJ
+    # potentially qualified by a conJUNCT
+    # with an optional VIA
+    # e.g. open the box with the red key
+    # myCmd = open
+    # myObj = box
+    # conJunct = with
+    # myVia = red key
+    # e.g. put the red key in the box
+    # myCmd = put
+    # myObj = red key
+    # conJunct = in
+    # myVia = box
+    myCmd, myObj, conJunct, myVia = controllers.parseInput(inputTokenized, legalInputs)
     
-    de.bug("returned to gameExec with these:", myCmd, myObj, myTarget)
+    de.bug("returned to gameExec with these:", myCmd, myObj, conJunct, myVia)
     
     # deal with returned information structures
     
@@ -183,7 +196,7 @@ while WIN == False:
         
             if ix != None:
                 myObj = inputTokenized[1:ix] # before Cmd2
-                myTarget = inputTokenized[(ix+1):] # after Cmd2
+                myVia = inputTokenized[(ix+1):] # after Cmd2
             else:
                 myObj = inputTokenized[1:] # second plus the rest
         
@@ -220,7 +233,7 @@ while WIN == False:
             for ky in inputGroup:
                 
                 # reset Target
-                myTarget = None
+                myVia = None
                 
                 
                 
@@ -282,8 +295,8 @@ while WIN == False:
                         controllers.printText(uiData[myInput], myInput)
     
                     elif t == 4: #action command
-#                        de.bug("move:", myInput, "cmd2:", myCmd2, "myObj:", myObj, "myTgt:", myTarget)
-                        controllers.useObject(myInput, myCmd2, myObj, myTarget, allObjects)
+#                        de.bug("move:", myInput, "cmd2:", myCmd2, "myObj:", myObj, "myTgt:", myVia)
+                        controllers.useObject(myInput, myCmd2, myObj, myVia, allObjects)
               
             
     # EXITING game?

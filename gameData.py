@@ -66,14 +66,16 @@ uiCmds = {'generalCmds':generalCmds}
 # NOTE all command arrays must be added explicitly to OBJECTS below
 # NOTE changing command words will affect OBJECTS that list them
 
+conJuncts = ['with', 'through', 'in', 'from', 'into', 'on', 'under', 'near', 'next', 'inside']
+
 # object commands interact with objects without changing the world
 objCmds = ['look at', 'examine', 'e']
 
-# get commands add an object to player inventory
+# get commands add an object to player inventory 
 getCmds = ['get', 'take', 'pick up']
 
 # put commands remove an object from player inventory
-putCmds = ['leave', 'drop', 'put down', 'put up there', 'put in', 'put']
+putCmds = ['leave', 'drop', 'put down', 'put up there', 'put', 'put up']
 
 # interaction commands change the state of an object in inventory or location
 intCmds = ['open', 'close', 'move', 'get in', 'pick']
@@ -82,7 +84,7 @@ intCmds = ['open', 'close', 'move', 'get in', 'pick']
 useCmds = ['use', 'drink', 'eat', 'attack', 'shoot', 'stab']
 
 #### ACTION commands Dictionary object ###########
-actionCmds = {'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
+actionCmds = {'conJuncts':conJuncts, 'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
 
 
 
