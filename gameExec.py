@@ -150,7 +150,7 @@ while WIN == False:
     # myObj = box
     # conJunct = with
     # myVia = red key
-    # e.g. put the red key in the box
+    # e.g. put the red key in the boxexit
     # myCmd = put
     # myObj = red key
     # conJunct = in
