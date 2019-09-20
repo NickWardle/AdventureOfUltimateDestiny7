@@ -294,8 +294,6 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                                 # add the command/object one less than the current list 
                                 # length to the list of known commands to return
                                 de.bug("5.", check_array_slice[len(check_array_slice)-2], "must be a singleton")
-#                                known_cmds.append(check_array_slice[len(check_array_slice)-2])
-#                                de.bug("6. adding it to known_cmds", known_cmds)
                                 parsed_matches.append(check_array_slice[len(check_array_slice)-2])
                             
                                 # clean last element off check_array
@@ -336,126 +334,11 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             # and append it to singletons instead, because it doesn't need checking as a 'multiple'
             elif sequence == 1:
                 should_be_singleton = check_array.pop()
-#                known_cmds.append(should_be_singleton)
                 parsed_matches.append(should_be_singleton)
                 
-            
-            # multi-part commands and singletons now in two lists
+            # all commands now in one list parsed_matches
             de.bug("PARSED_MATCHES ::", parsed_matches)
-#            de.bug("Parsing Complete: check these items", check_array)
-#            de.bug("we found these singletons we are certain of", known_cmds)
 
-            
-############################################################################
-            
-            ii = key_num
-            cmd_check_list = []
-            mov_check_list = []
-            jun_check_list = []
-            obj_check_list = []
-            firsts = {'c':None, 'm':None, 'cj':None, 'o':None}
-            trim_list = []
-            p_recheck = None
-            for p in parsed_cmds:
-                
-                # reset p to previous one if a recheck is required (see else)
-                if p_recheck != None:
-                    p = p_recheck
-                    p_recheck = None
-                
-                m = str(ii) + "-mov"
-                c = str(ii) + "-cmd"
-                o = str(ii) + "-obj"
-                cj = str(ii) + "-jun"
-                de.bug("p", p, "?= c", c, " m", m, " cj", cj, " o", o)
-                if p == c:
-#                    de.bug("p", p, " c", c)
-                    # record first occurence of a 'cmd'
-                    if firsts['c'] == None:
-                        firsts['c'] = ii
-                    # sequential, add to 'check list' and continue..
-                    elif ii > firsts['c']:
-                        cmd_check_list.append(parsed_cmds[c])
-                        trim_list.append(c)
-                    
-#                    de.bug("list so far", cmd_check_list)
-                    
-                    # increment to check next item in parsed_cmds
-                    ii = ii + 1
-#                    de.bug("we are checking", ii, "next")
-                    
-                elif p == m:
-#                    de.bug("p", p, " m", m)
-                    # record first occurence of a 'mov'
-                    if firsts['m'] == None:
-                        firsts['m'] = ii
-                    # sequential, add to 'check list' and continue..
-                    elif ii > firsts['m']:
-                        mov_check_list.append(parsed_cmds[m])
-                        trim_list.append(m)
-                    
-#                    de.bug("list so far", mov_check_list)
-                    
-                    # increment to check next item in parsed_cmds
-                    ii = ii + 1
-#                    de.bug("we are checking", ii, "next")
-                
-                elif p == cj:
-#                    de.bug("p", p, " cj", cj)
-                    # record first occurence of a 'mov'
-                    if firsts['cj'] == None:
-                        firsts['cj'] = ii
-                    # sequential, add to 'check list' and continue..
-                    elif ii > firsts['cj']:
-                        jun_check_list.append(parsed_cmds[cj])
-                        trim_list.append(cj)
-                    
-#                    de.bug("list so far", jun_check_list)
-                    
-                    # increment to check next item in parsed_cmds
-                    ii = ii + 1
-#                    de.bug("we are checking", ii, "next")
-                    
-                elif p == o:
-#                    de.bug("p", p, " o", o)
-                    # record first occurence of a 'obj'
-                    if firsts['o'] == None:
-                        firsts['o'] = ii
-                    # sequential, add to 'check list' and continue..
-                    elif ii > firsts['o']:
-                        obj_check_list.append(parsed_cmds[o])
-                        trim_list.append(o)
-                    
-#                    de.bug("list so far", obj_check_list)
-                    
-                    # increment to check next item in parsed_cmds
-                    ii = ii + 1
-#                    de.bug("we are checking", ii, "next")
-                    
-                else:
-                    # no sequential matches found, or sequence was broken
-#                    cc = ii-1
-#                    if cc > 1:
-#                        de.bug("sequential matches up to", cc)
-#                    else:
-#                        de.bug("command is a singleton with multiple potential matching commands. Need to check word length")
-                    
-                    # increment to check next item in parsed_cmds
-                    # the next item in the list will NOT be ++1 it will be 
-                    # more than that so we need to get the next key to check 
-                    # for from parsed_cmds itself
-                    ii = int(p.split("-")[0])
-#                    de.bug("ii jumps to", ii, " for next check")
-                    
-                    # recheck the last item again in the for loop
-                    p_recheck = p
-
-                        
-#            de.bug("firsts", firsts)     
-            
-############################################################################
-                    
-                    
             # find the common cmds in each part of the parsed_matches list 
             # and put them into sets{}
             tmp_list = []
@@ -495,7 +378,6 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                     if valid != False:
                         # Add cmd to the list of commands we will return to gameExec
                         known_cmds.append(valid)
-#                        valid_cmds.append(valid)
                         de.bug("found this valid cmd", valid)
                     else:
                         de.bug("not enough matches to complete command phrase - invalid command:", valid)
@@ -507,7 +389,6 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             
             de.bug("ALL KNOWN COMMANDS, in order", known_cmds)        
             
-            ###### GOT TO HERE ###############
             # then classify each matched cmd as a type
             # o = obj, m = mov, conJunct = con 
             # else = cmd
@@ -515,102 +396,28 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             a_obj = None
             a_conJunct = None
             a_via = None
+            obj_ls = []
             
             for i in known_cmds:
                 els = i.split("-")
                 if els[0] == "conJuncts":
                     a_conJunct = i
                 elif els[0] == "o":
-                    if known_cmds.count(i) > 1:
-                        # first one is obj, second one is via
-                        de.bug("obj and via present")
-                    else:
-                        a_obj = i
+                    # obj and via present
+                    obj_ls.append(i)
                 else:
                     a_cmd = i
             
-            parsed_final.append(a_cmd)
-            parsed_final.append(a_obj)
-            parsed_final.append(a_conJunct)
-            parsed_final.append(a_via)
-            
-            de.bug("PARSED_FINAL", parsed_final)
-#            return parsed_final
-
-                    
-                    
-                    
-############################################################################
-            
-            
-            # check if any cmds in any cmd lists in the 'check list'
-            # match any other cmds in any of the other cmd lists 
-            # *unpack 'cmd_check_list' as the arguments of the intersection check
-            # and put them into sets{} - these are NOT dicts
-            
-            cmd_mtch_c = {}
-            cmd_mtch_m = {}
-            cmd_mtch_o = {}
-            cmd_mtch_j = {}
-            
-            if len(cmd_check_list) > 0:
-                c_key = str(firsts['c']) + '-cmd'
-                cmd_mtch_c = set(parsed_cmds[c_key]).intersection(*cmd_check_list)
-            
-            if len(mov_check_list) > 0:
-                m_key = str(firsts['m']) + '-mov'
-                cmd_mtch_m = set(parsed_cmds[m_key]).intersection(*mov_check_list)
-                
-            if len(jun_check_list) > 0:
-                j_key = str(firsts['j']) + '-jun'
-                cmd_mtch_j = set(parsed_cmds[j_key]).intersection(*jun_check_list)
-                
-            if len(obj_check_list) > 0:
-                o_key = str(firsts['o']) + '-obj'
-                cmd_mtch_o = set(parsed_cmds[o_key]).intersection(*obj_check_list)
-            
-            
-            de.bug("matched input against these cmds", cmd_mtch_c, cmd_mtch_m, cmd_mtch_j, cmd_mtch_o)
-            
-            # for ANY matching commands
-            cmd_mtchs = [cmd_mtch_c, cmd_mtch_m, cmd_mtch_j, cmd_mtch_o]
-            
-            
-            for ls in cmd_mtchs:
-                # check if the matched command is the correct length
-                # to match a valid command in the database
-                                
-                valid =cmdLengthChecker(ls, parsed_cmds, tkns, legalinputs)
-                de.bug("after cmdLengthChecker() matched cmd is", valid)
-                
-                if valid != False:
-                    # Add cmd to the list of commands we will return to gameExec
-                    valid_cmds.append(valid)
-                else:
-                    de.bug("not enough matches to complete command phrase - invalid command:", valid)
-                
-                # Return all valid cmds found THIS PASS
-                return valid_cmds
-            
-        elif len(parsed_cmds) == 1: # only 1 command and it's a singleton
-            
-            # check if the matched command is the correct length
-            # to match a valid command in the database
-            valid = cmdLengthChecker(None, parsed_cmds, tkns, legalinputs)
-            
-            if valid != False:
-                # RETURN the list of commands we will return to gameExec
-                valid_cmds.append(valid)
-                de.bug("only one command found", parsed_cmds, "returning this", valid)
+            # assign obj and via
+            if len(obj_ls) > 1:
+                a_obj, a_via = obj_ls
             else:
-                de.bug("singleton command found, but is not valid")
+                a_obj = obj_ls[0]
             
-            # Return all valid cmds found THIS PASS
-            return valid_cmds
-            
-        else: # parsed_cmds is empty
-            
-            de.bug("no commands found")
+            # build and return the correctly ordered variables to gameExec
+            parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
+            de.bug("PARSED_FINAL", parsed_final)
+            return parsed_final
 
 
 
@@ -618,9 +425,6 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     
     parsed_cmds = {}
     matched_cmds = None
-    obj = None
-    jun = None ### need to add this in as a returnable for conJuncts
-    tgt = None ### out of date, this should be via
     type_track = []
     
     i = 0
@@ -690,30 +494,23 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
                     else:
                         parsed_cmds[c] = [ind]
                 
+
     de.bug("Parsed input: tokens", tkns, "and cmds", parsed_cmds)
     
     # Now check the words in that parsed cmds list for matches
     if len(parsed_cmds) > 0:
         matched_cmds = wrdChecker(tkns, parsed_cmds, legalinputs)
     
-    de.bug(">>>>> wrdChecker() returned this", parsed_cmds, "and matched these", matched_cmds)
-       
-    
     if matched_cmds == False:
         de.bug("USERCONF", gD.USERCONF)
         de.bug("PROMPT", gD.PROMPT)
     elif matched_cmds != None:
-        # add successfully found command to what we send back to gameExec
-        de.bug("successfully matched this command", matched_cmds)
-#        returned_cmds.append(matched_cmds)
-    
+        de.bug("successfully matched these commands", matched_cmds)
     else:
         de.bug("there were no valid commands matched in the input")
     
-    ########################################
-    # Note: I removed obj finding code above here. obj always == None
     # RETURN all of the things!!
-    return matched_cmds, obj, jun, tgt
+    return matched_cmds
 
 
 
