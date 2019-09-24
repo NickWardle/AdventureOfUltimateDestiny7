@@ -85,6 +85,9 @@ def render_Text(d, t="default"): #generic text renderer
         
         # trigger all monsters revealed
         #### INCOMPLETE
+        
+    elif t == 'look for': # requires an obj
+        print(ss.inputFeedbackPre, "You see", d[0].lower(), d[1].lower())
 
     elif t == 'missing object': # part of controllers.useObject()
         print(ss.inputFeedbackPre, "There is no", d.lower(), "here")

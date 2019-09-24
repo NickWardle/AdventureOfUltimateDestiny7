@@ -13,11 +13,7 @@ from nltk.tokenize import word_tokenize
 
 #import errorHandler
 
-# == INITIALISE DATA =================================================
 
-# get ALL LOCATION DATABASE
-locDb = gD.locDb
-legalInps = {}
 
 # == CONTROLLERS =================================================
 # modules that take inputs from player, or other modules, and update the models
@@ -50,13 +46,13 @@ def printText(d, t="default"): # generic text printer
 
 def changeLoc(loc): #generic location changer 
     
-    if loc in locDb:
+    if loc in gD.locDB:
         
         # get current location data and make it GLOBAL
-        gD.LOCDATA = locDb[loc]
+        gD.LOCDATA = gD.locDB[loc]
         
     else:
-        de.bug("Location not in locDb")
+        de.bug("Location not in gD.locDB")
     
     # show thinkingDots
     print('\n. . . . L O A D I N G . . . .\n')
@@ -101,13 +97,13 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
         user_conf = ' '.join(new_tokens)
         
         # return sanitised input and setup confirmation request prompt
-        de.bug("3. confirm me this", user_conf)
+        de.bug(1, "3. confirm me this", user_conf)
         gD.PROMPT = 'reqconf'
         gD.USERCONF = user_conf
         
     else: # just spawn default PROMPT again
         
-        de.bug("no input, just respawn default PROMPT")
+        de.bug(1, "no input, just respawn default PROMPT")
         gD.PROMPT = False
         gD.USERCONF = None
     
@@ -125,7 +121,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
         # tokenised single word player input and any of those commands 
         # match exactly
         
-        de.bug("singleton command, checking for length=1 valid commands in", cmd_mtch)
+        de.bug(1, "singleton command, checking for length=1 valid commands in", cmd_mtch)
                 
         for rf in cmd_mtch:
             rf_elems = rf.split("-")
@@ -143,7 +139,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
                 # does the player input match any single command word?
                 for t in tkns:
                     if t == cmd_wrds:
-                        de.bug("valid command phrase matched:", t, "as", cmd_wrds, "returning ref", rf)
+                        de.bug(1, "valid command phrase matched:", t, "as", cmd_wrds, "returning ref", rf)
                         return rf
                 
         return False
@@ -175,7 +171,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
             # count the number of words
             cmd_wrds = cmd_lst[int(cmd_elems[1])]
             cmd_len = len(tokenizeInput(cmd_wrds))
-            de.bug("cmd wrds '", cmd_wrds, "' cmd len", cmd_len)
+            de.bug(1, "cmd wrds '", cmd_wrds, "' cmd len", cmd_len)
             
             # require this many sequential parsed_cmds.keys() matches
             q = 1
@@ -184,13 +180,13 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
                 
                 # increment through each "n-suffix"
                 myKey = str(q) + suf
-                de.bug("check this key", myKey)
+                de.bug(1, "check this key", myKey)
                 
                 #check we haven't just run out of cmds
                 if myKey in parsed_cmds.keys():
                     
                     if cmd_item not in parsed_cmds[myKey]:
-                        de.bug("missing in", myKey)
+                        de.bug(1, "missing in", myKey)
                         cmd_valid = False
                 
                 else: # failed to match full length, invalid command
@@ -202,7 +198,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
             # if yes, this is a valid command
             if cmd_valid == True:
                 
-                de.bug("valid command phrase matched:", cmd_wrds, "as", cmd_item)
+                de.bug(1, "valid command phrase matched:", cmd_wrds, "as", cmd_item)
                 return cmd_item
                 
                 # no need to check further cmd_items
@@ -221,7 +217,7 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
     
     junk_wrds = False
     for k in parsed_cmds.keys():
-        de.bug("checking for junk words", str(key_num), k[0])
+        de.bug(1, "checking for junk words", str(key_num), k[0])
         if str(key_num) in k[0]:
             break
         else:
@@ -249,25 +245,25 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             
     else: # check parsed_cmds as normal
         
-        # create an empty list for matched valid_cmds for THIS PASS
-        valid_cmds = []
+        # 'global' lists for if / else
+        known_cmds = []
+        parsed_final = []
         
         # if there is more than one potential match found
         if len(parsed_cmds) > 1:
             
             # check for string matches in sequential cmd-lists, because these might be two-word entities (or two seperate entities)
             check_array = []
-            known_cmds = [] 
             parsed_matches = []
             check_start_index = 0
             sequence = 0
             
             for p, q in parsed_cmds.items():
-                de.bug("FOR LOOP: we are at", q)
+                de.bug(1, "FOR LOOP: we are at", q)
                 
                 # put current cmd-list into a check array
                 check_array.append(q)
-                de.bug("1. current check array", check_array)
+                de.bug(1, "1. current check array", check_array)
                 
                 # check to see if the check array slice has more than one item in it
                 if len(check_array) > 1:
@@ -275,49 +271,49 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                     # similar in to the any of the other items in the 
                     # check list back as far as the check-start-index
                     check_array_slice = check_array[check_start_index:]
-                    de.bug("2. compare check array from this start point", check_start_index, check_array_slice)
+                    de.bug(1, "2. compare check array from this start point", check_start_index, check_array_slice)
                     for itm in check_array_slice:
-                        de.bug("3. items in sequence so far", sequence)
+                        de.bug(1, "3. items in sequence so far", sequence)
                         found_match = set(check_array_slice[len(check_array_slice)-1]).intersection(itm)
                         if len(found_match) > 0 and q != itm:
                             # if it does
-                            de.bug("4. check for a match and found something", found_match)
+                            de.bug(1, "4. check for a match and found something", found_match)
                             sequence += 1
                             
                             # no need to check further
                             break
                         
                         else:
-                            de.bug("4. nothing matching found")
+                            de.bug(1, "4. nothing matching found")
                             
                             if sequence == 1:
                                 # add the command/object one less than the current list 
                                 # length to the list of known commands to return
-                                de.bug("5.", check_array_slice[len(check_array_slice)-2], "must be a singleton")
+                                de.bug(1, "5.", check_array_slice[len(check_array_slice)-2], "must be a singleton")
                                 parsed_matches.append(check_array_slice[len(check_array_slice)-2])
                             
                                 # clean last element off check_array
                                 check_array.pop(len(check_array)-2)
-                                de.bug("7. removed it from check array", check_array)
+                                de.bug(1, "7. removed it from check array", check_array)
     
                             else:
-                                de.bug("4-i. But what was sequence at this point?", sequence)
+                                de.bug(1, "4-i. But what was sequence at this point?", sequence)
                                 st = ((len(check_array)-1)-sequence)
                                 en = len(check_array)-1
                                 parsed_matches.append(check_array[st:en])
                                 sequence = 1
-                                de.bug("reset sequence to", sequence)
+                                de.bug(1, "reset sequence to", sequence)
                                 
                             
                             # set a new check-start-index as the length-1 of the check list
                             check_start_index = check_array.index(check_array_slice[len(check_array_slice)-1])
-                            de.bug("8. new check start index", check_start_index)
+                            de.bug(1, "8. new check start index", check_start_index)
                             
                             #no need to continue checking
                             break
                 
                 else:
-                    de.bug("2. nothing to compare", check_array)
+                    de.bug(1, "2. nothing to compare", check_array)
                     sequence += 1
             
                 # increment to next item
@@ -337,13 +333,12 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                 parsed_matches.append(should_be_singleton)
                 
             # all commands now in one list parsed_matches
-            de.bug("PARSED_MATCHES ::", parsed_matches)
+            de.bug(1, "PARSED_MATCHES ::", parsed_matches)
 
             # find the common cmds in each part of the parsed_matches list 
             # and put them into sets{}
             tmp_list = []
             final_candidates = []
-            parsed_final = []
             match_candidates = {}
             
             for grp in parsed_matches:
@@ -364,21 +359,21 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                     tmp_list = []
                 
                     
-            de.bug("final de-duped matches", final_candidates)
+            de.bug(1, "final de-duped matches", final_candidates)
             
             # ONLY need to send set()s in final_candidates that have len > 1
             # to the lengthchecker, because we know ALREADY KNOW the others :)
             
             for s in final_candidates:
                 if len(s) > 1:
-                    de.bug("NEW LOOP sending this to lengthChecker", s)
+                    de.bug(1, "sending this to lengthChecker", s)
                     valid = cmdLengthChecker(s, parsed_cmds, tkns, legalinputs)
-                    de.bug("NEW LOOP after cmdLengthChecker() matched cmd is", valid)
+                    de.bug(1, "after cmdLengthChecker() matched cmd is", valid)
                     
                     if valid != False:
                         # Add cmd to the list of commands we will return to gameExec
                         known_cmds.append(valid)
-                        de.bug("found this valid cmd", valid)
+                        de.bug(1, "found this valid cmd", valid)
                     else:
                         de.bug("not enough matches to complete command phrase - invalid command:", valid)
                     
@@ -387,38 +382,49 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
                     # add the item to the list of known_cmds
                     known_cmds.append(*s)
             
-            de.bug("ALL KNOWN COMMANDS, in order", known_cmds)        
+        # single word only inputted
+        else:
             
-            # then classify each matched cmd as a type
-            # o = obj, m = mov, conJunct = con 
-            # else = cmd
-            a_cmd = None
-            a_obj = None
-            a_conJunct = None
-            a_via = None
-            obj_ls = []
+            de.bug(1, "single word command detected")
+            for x, y in parsed_cmds.items():
+                valid = cmdLengthChecker(y, parsed_cmds, tkns, legalinputs)
+                if valid != False:
+                    known_cmds.append(valid)
+                else: 
+                    de.bug("that wasn't a fully formed command, ignoring it")
             
-            for i in known_cmds:
-                els = i.split("-")
-                if els[0] == "conJuncts":
-                    a_conJunct = i
-                elif els[0] == "o":
-                    # obj and via present
-                    obj_ls.append(i)
-                else:
-                    a_cmd = i
-            
-            # assign obj and via
-            if len(obj_ls) > 1:
-                a_obj, a_via = obj_ls
+        de.bug(1, "ALL KNOWN COMMANDS, in order", known_cmds)        
+        
+        # then classify each matched cmd as a type
+        # o = obj, m = mov, conJunct = con 
+        # else = cmd
+        a_cmd = None
+        a_obj = None
+        a_conJunct = None
+        a_via = None
+        obj_ls = []
+        
+        for i in known_cmds:
+            els = i.split("-")
+            if els[0] == "conJuncts":
+                a_conJunct = i
+            elif els[0] == "o":
+                # obj and via present
+                obj_ls.append(i)
             else:
-                a_obj = obj_ls[0]
-            
-            # build and return the correctly ordered variables to gameExec
-            parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
-            de.bug("PARSED_FINAL", parsed_final)
-            return parsed_final
-
+                a_cmd = i
+        
+        # assign obj and via
+        if len(obj_ls) > 1:
+            a_obj, a_via = obj_ls
+        elif len(obj_ls) == 1:
+            a_obj = obj_ls[0]
+        
+        # build and return the correctly ordered variables to gameExec
+        parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
+        de.bug("PARSED_FINAL", parsed_final)
+        return parsed_final
+        
 
 
 def parseInput(tkns, legalinputs): # extract objects from tokenized input
@@ -495,7 +501,7 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
                         parsed_cmds[c] = [ind]
                 
 
-    de.bug("Parsed input: tokens", tkns, "and cmds", parsed_cmds)
+    de.bug(1, "Parsed input: tokens", tkns, "and cmds", parsed_cmds)
     
     # Now check the words in that parsed cmds list for matches
     if len(parsed_cmds) > 0:
@@ -504,9 +510,11 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     if matched_cmds == False:
         de.bug("USERCONF", gD.USERCONF)
         de.bug("PROMPT", gD.PROMPT)
+        matched_cmds = [None, None, None, None]
     elif matched_cmds != None:
-        de.bug("successfully matched these commands", matched_cmds)
+        de.bug(1, "successfully matched these commands", matched_cmds)
     else:
+        matched_cmds = [None, None, None, None]
         de.bug("there were no valid commands matched in the input")
     
     # RETURN all of the things!!
@@ -514,43 +522,131 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
 
 
 
-def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
+
+def doCommand(cmd, obj, jun, via, legalInputs, uiData):
     
+    if cmd != None:
+    
+        # we only need to identify the TYPE of cmd
+        # so we can action the correct function next
+        cmd_spl = cmd.split("-")
+        cmd_ky = cmd_spl[0]
+        my_cmd = legalInputs[cmd_spl[0]][int(cmd_spl[1])]
+        
+        if cmd_ky == "m":
+            
+            for i in gD.moveCommandsDB[gD.LOCDATA['moveCmds']]:
+                for j in i[0]:
+                    if my_cmd == j:
+                        moveDesc = i[1]
+                        if len(i) > 2:
+                            moveDest = i[2]
+                        else:
+                            de.bug("this cmd doesn't change our location")
+            
+            # show moveDesc feedback for moveCmd
+            printText(moveDesc, "move")            
+            
+            # if associated locID for moveCmd - changeLoc
+            changeLoc(moveDest)
+            
+            
+        elif cmd_ky in gD.uiCmds.keys():
+            
+            # render the appropriate user feedback message for the cmd
+            if my_cmd in gD.uiCmds['playerCmds']:
+                if my_cmd == "inv" or my_cmd == "inventory":
+                    de.bug("TEMP render of player inventory", gD.PLAYERINV)
+
+            elif my_cmd in gD.uiCmds['generalCmds']: 
+                
+                # specific for commands that require objects
+                if my_cmd == 'look for':
+                    if obj != None:
+                        
+                        # consolidate obj reference word
+                        o_elems = obj.split("-")
+                        obj_ref = legalInputs[o_elems[0]][int(o_elems[1])]
+                        
+                        de.bug(2, obj_ref, "locDATA", gD.LOCDATA)
+                        
+                        for dc in gD.LOCDATA['locObjects']:
+                            if obj_ref in gD.objectsDB[dc]['refs']:
+                                obj_desc = gD.objectsDB[dc]['desc']
+                                obj_loc = gD.objectsDB[dc]['location']
+                        
+                        printText([obj_desc, obj_loc], my_cmd)
+                        
+                    else:
+                        renderers.render_actionHelp(my_cmd)
+                
+                else:
+                
+                    printText(uiData[my_cmd], my_cmd)
+                
+            else: 
+                de.bug("Error (doCommand): command '", my_cmd, "' not found in uiCmds")
+            
+        elif cmd_ky in gD.actionCmds.keys():
+            
+            de.bug(2, "locDATA", gD.LOCDATA)
+            
+            # send the cmd and the obj to useObject for more detailed handling
+            useObject(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs)
+            
+        else:
+            de.bug("Error (doCommand): The command", cmd, "is not handled yet")
+        
+        # can return a value to gameExec if required
+        
+    else:
+        
+        return False
+        
+
+
+def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
+    
+    # so that you have a CMD that affects an OBJ
+    # potentially qualified by a conJUNCT
+    # with an optional VIA
+    # e.g. open the box with the red key
+    # myCmd = open
+    # myObj = box
+    # conJunct = with
+    # myVia = red key
+    # e.g. put the red key in the boxexit
+    # myCmd = put
+    # myObj = red key
+    # conJunct = in
+    # myVia = box
+    
+   
     # Resetting values
     oInfo = []
+    obs = []
+
+    # consolidate cmd reference word
+    c_elems = cmd.split("-")
+    cmd_ref = inps[c_elems[0]][int(c_elems[1])]
       
-    # check against a singleton action command entry
+    # check against a singleton action command entry (show help if it is)
     if obj != None:
         
-        # Check for a target
-        if tgt != None:
-            
-            # consolidate from inputTokenized array
-            theTgt = tgt[0]
-            if len(tgt) > 1:
-                j = 1
-                for i in range(len(tgt)-1):
-                    theTgt += ' '
-                    theTgt += tgt[j]
-                    j += 1
+        for o in obs_list:
+            obs.append(gD.objectsDB[o])
         
-        # Check obj is an array (and not a dumb string)
-        if type(obj) != str:
-            
-            # consolidate obj reference (from "obj" : inputTokenized array)
-            theObj = obj[0]
-            if len(obj) > 1:
-                j = 1
-                for i in range(len(obj)-1):
-                    theObj += ' '
-                    theObj += obj[j]
-                    j += 1
+        # consolidate obj reference word
+        o_elems = obj.split("-")
+        obj_ref = inps[o_elems[0]][int(o_elems[1])]
         
-        else:
-            
-            # object was referenced with no action command
-            # handle feedback below
-            theObj = obj
+        if via != None and jun != None:
+            # consolidate via and conJunct reference word
+            v_elems = via.split("-")
+            via_ref = inps[v_elems[0]][int(v_elems[1])]
+            j_elems = jun.split("-")
+            jun_ref = inps[j_elems[0]][int(j_elems[1])]
+
 
         # check if location has any objects (data)
         if len(obs) > 0:
@@ -558,8 +654,7 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
             # check the object exists in this location
             missing_object = True
             for o in obs:
-                if theObj in o['refs']:
-                    
+                if obj_ref in o['refs']:
                     #collate available commands for obj
                     for k, v in o.items():
                         #match any of "getCmds-OK, putCmds-OK" etc
@@ -572,41 +667,44 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                 # extract name-string of command list
                                 # and get all cmds in that command list
                                 w = k[:-3] 
-                                a = eval("gD."+w)
+                                a = gD.actionCmds[w]
                                 for i in range(len(a)):
                                     oInfo.append(a[i])
 
                     
-                    ### == GENERAL OBJECT COMMANDS ==========================
+                    ### == obj COMMANDS: look at, examine etc. =============
                     
-                    if cmd == "look at":
+                    
+                    if cmd_ref == "look at":
                         renderers.render_Text(o['desc'], 'look at')
         
-                    elif cmd == "examine":
+                    elif cmd_ref == "examine":
                         #add name to oInfo for renderer
                         oInfo.append(o['name'])
                         
                         renderers.render_Text(oInfo, 'examine')
-                            
-                    ### == ACTION OBJECT COMMANDS ==========================
-                    
+                        
+                        
+                    ### == get, put, use, int COMMANDS =====================
+                
+                
                     # check legal action for the object
-                    elif cmd in oInfo:
+                    if cmd_ref in oInfo:
                           
                         # get command add object to inventory
                         # check all get aliases
                         for i in gD.ACTCMDS['getCmds']:
-                            if cmd == i:
+                            if cmd_ref == i:
                                 
                                 # remove obj from inv
                                 if tfs.updateInventory(o, "add") != False:
                                 
                                     # render feedback to player
-                                    renderers.render_objectActions(o, cmd, "get-take")
+                                    renderers.render_objectActions(o, cmd_ref, "get-take")
                                     
                                     ### INCOMPLETE NEED TO call
                                     ## PLAYER INV renderer here
-                                    print(gD.PLAYERINV)
+#                                    print(gD.PLAYERINV)
                                 
                                 else:
                                     
@@ -616,7 +714,7 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                         # put command remove object from inventory
                         # check all put aliases
                         for i in gD.ACTCMDS['putCmds']:
-                            if cmd == i:
+                            if cmd_ref == i:
                                 
                                 # INCOMPLETE don't be specific on 
                                 # the item you are dropping if
@@ -628,7 +726,7 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                 if tfs.updateInventory(o, "remove") != False:
                                 
                                     # render feedback to player
-                                    renderers.render_objectActions(o, cmd, "put-leave")
+                                    renderers.render_objectActions(o, cmd_ref, "put-leave")
                                     
                                     ### INCOMPLETE NEED TO call
                                     ## PLAYER INV renderer here
@@ -640,20 +738,19 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                     renderers.render_Text(o['name'], 'not in inv')
                     
                         # use commands do object custom action
-                        if cmd == "use":
+                        if cmd_ref == "use":
                             
                             # check used obj is in player inv
                             if tfs.playerOwns(o) != False:
                             
                                 # no target, singleton "use"
-                                if theTgt != None:
+                                if via != None:
                                     
                                     ## INCOMPLETE . JUST ALL OF THIS!!
                                     
                                     # check object STATE
                                     objectState(o)
-                                    de.bug("2nd command", cmd2)
-                                    de.bug("use key on -", theTgt)
+                                    de.bug("use key on -", via)
                                     #use key on box
                                     
     #                                renderers.render_objectActions(o, cmd, cmd)
@@ -667,13 +764,13 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                     
                                     # use key - "use key on what?"
                                     # render feedback to player
-                                    renderers.render_objectActions(o, cmd, cmd)
+                                    renderers.render_objectActions(o, cmd_ref, cmd_ref)
                                     
                             else:
                                 # trying to use obj not in inv
                                 renderers.render_Text(o['name'], 'not in inv')
                         
-                        if cmd == "open":
+                        if cmd_ref == "open":
                             
                             # check if object permissions prevent action
                             can_open = tfs.objPermissions(o)
@@ -681,26 +778,26 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
                                 # update object state according to o['state']
                                 objectState(o['state'])
                                 
-                                                                
-                                
                             elif can_open == "has-req-obj":
                                 # tell player they need to use the req obj
-                                renderers.render_objectActions(o, cmd, "has-req-obj")
+                                renderers.render_objectActions(o, cmd_ref, "has-req-obj")
                                 
                             else:
                                 # send open-FAIL type and object to renderer
                                 t = can_open[0]
-                                renderers.render_objectActions(o, cmd, t)
+                                renderers.render_objectActions(o, cmd_ref, t)
                     
-                    elif cmd != None:
+                    else:
+                        
                         # must be an illegal command for this object
                         # feedback 'you can't do that to this object'
                         t = "illegal"
-                        renderers.render_objectActions(o, cmd, t)
+                        renderers.render_objectActions(o, cmd_ref, t)
+                            
                     
                     ### == NO COMMAND GIVEN ==========================
                     
-                    if cmd == None:
+                    if cmd_ref == None:
                         # User referenced an object WITHOUT putting
                         # an action command - So give them help
                         renderers.render_objectHelp(oInfo, o['name'])
@@ -712,23 +809,21 @@ def useObject(cmd, cmd2, obj, tgt, obs): # generic Object handler
             # handle input reference to an object that is not at this loc
             if missing_object == True:
                 de.bug('missing object')
-                renderers.render_Text(theObj, 'missing object')
+                renderers.render_Text(obj_ref, 'missing object')
     
         else:
             # no objects at all at this loc
             de.bug('no objects')
-            renderers.render_Text(theObj, 'missing object')
+            renderers.render_Text(obj_ref, 'missing object')
     
     else:
         # if singleton, show correct actionCmd feedback help
-        renderers.render_actionHelp(cmd)
+        renderers.render_actionHelp(cmd_ref)
     
     
     
 def objectState(o): # what happens after the useObject action is successful?
     
-#    de.bug(eval(o))
-#    de.bug('' + o)
     test_o = tfs.namestr(o, globals())
     print(gD.World_frame.loc[test_o])
     

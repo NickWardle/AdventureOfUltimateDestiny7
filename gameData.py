@@ -52,11 +52,17 @@ ignoreWords = ['the', 'to', 'a', 'and']
 # the loc (deliberately). However, the risk is that you will uncover a
 # a MONSTER when you search..!
 
-# all general UI commands    
-generalCmds = ['look', 'search', 'help', 'cheat', 'exit']
+uiCmds = {
 
-#### UI commands Dictionary object ###########
-uiCmds = {'generalCmds':generalCmds}
+# all general UI commands    
+'generalCmds' : ['look', 'look for', 'search', 'help', 'cheat', 'exit', 'where'],
+
+# all player charcter commands
+'playerCmds' : ['inv', 'inventory'],
+
+}
+
+
 
 
 # == ACTION COMMANDS ===============================================
@@ -66,30 +72,50 @@ uiCmds = {'generalCmds':generalCmds}
 # NOTE all command arrays must be added explicitly to OBJECTS below
 # NOTE changing command words will affect OBJECTS that list them
 
-conJuncts = ['with', 'through', 'in', 'from', 'into', 'on', 'under', 'near', 'next', 'inside']
+actionCmds = {
+
+# conjunctions affect the outcome of an actionCmd on an object
+'conJuncts' : ['with', 'through', 'in', 'from', 'into', 'on', 'under', 'near', 'next', 'inside'],
 
 # object commands interact with objects without changing the world
-objCmds = ['look at', 'examine', 'e']
+'objCmds' : ['look at', 'examine', 'e'],
 
-# get commands add an object to player inventory 
-getCmds = ['get', 'take', 'pick up']
+# get commands add an object to the player's hands
+'getCmds' : ['get', 'take', 'pick up'],
 
-# put commands remove an object from player inventory
-putCmds = ['leave', 'drop', 'put down', 'put up there', 'put', 'put up']
+# put commands move an object from the players hands to another location
+'putCmds' : ['leave', 'drop', 'put down', 'put up there', 'put', 'put up'],
 
-# interaction commands change the state of an object in inventory or location
-intCmds = ['open', 'close', 'move', 'get in', 'pick']
+# interaction commands change the state of an object
+# some objects need to be in the players hands first
+'intCmds' : ['open', 'close', 'move', 'get in', 'pick'],
 
 # use commands consume one use of an object
-useCmds = ['use', 'drink', 'eat', 'attack', 'shoot', 'stab']
+# some objects have infinite uses
+'useCmds' : ['use', 'drink', 'eat', 'attack', 'shoot', 'stab'],
+
+}
 
 #### ACTION commands Dictionary object ###########
-actionCmds = {'conJuncts':conJuncts, 'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
+#actionCmds = {'conJuncts':conJuncts, 'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
+
+
+
+
+# == CHARACTER CONFIGURATION ===============================================
+
+# Set up the basic attributes of teh Player Character
+
+character_handedness = 'right' # 'right' or 'left'
+
 
 
 
 
 # == CHARACTER INVENTORY ===============================================
+
+# the player only has two hands and one is "default", set in Character Config
+player_hands = {'right': [], 'left': [], 'default': [character_handedness]}
 
 ### When the structure of this dictionary changes, adjust parsing in controllers.objPermissions()
 player_inventory = {'utils': [], 'weapons':[], 'food':[], 'clothes':[]}
@@ -104,55 +130,43 @@ player_inventory = {'utils': [], 'weapons':[], 'food':[], 'clothes':[]}
 mob0001 = {}
 
 
-# == ALL MOVES ============================================================
 
-# == Move commands: LEGAL (m) and ILLEGAL (x)
-m010001 = [ # legal moves
+
+
+
+# == ALL MOVES ============================================================
+moveCommandsDB = {
+
+'m010001' : [ 
     [
         ["n", "north"], 
         "You take the path to the North", 
         'z0002'
+    ],
+    [
+        ["e", "east"], 
+        "You walk east into the dark forest", 
+        'z0004'
     ]
-#    [
-#        ["open", "box"], 
-#        "You reach down and try to open the box at your feet", 
-#        'z0003', 
-#        ["Fortunately, you have the right key and the box springs open!", "This box is firmly locked. You'll need to find the key"]
-#    ]
 ]
-
-#x010001 = [ # illegal moves
-#    [
-#        ["e", "east"], 
-#        "Did you think you could go East? You can't go East..."
-#    ], 
-#    [
-#        ["w", "west"], 
-#        "Can't see the wood for the trees, eh...?"
-#    ]
-#]
-
-
-
-m010002 = [ # legal moves
+,
+'m010002' : [ 
     [
         ["s", "south"], 
         "You take the path to the South", 
         'z0001'
     ]
 ]
-    
-
-m010003 = [ # legal moves
+,  
+'m010003' : [ 
     [
         ["in", "inside", "into"], 
         "You step into the dark doorway", 
         'z0003'
     ]
 ]
-
-
-m010004 = [ # legal moves
+,
+'m010004' : [ 
     [
         ["out", "outside"], 
         "You step back out into the sunlight", 
@@ -160,6 +174,9 @@ m010004 = [ # legal moves
     ]
 ]  
     
+}
+
+
     
 # == OBJECTS ============================================================
 
@@ -170,89 +187,102 @@ m010004 = [ # legal moves
 
 # teleporters, vehicles, wormholes - move you to other locations
 
-# Do not include action command lists if the object cannot be "get" or "put" or "use"
+## location is an optional additional description of the place the object can be found
+## state describes conditions like 'locked_by' or 'contained_by'. Child objects always have the state i.e. boxes do not 'contain', children are 'contained_by' so that objects can be declared in the right order top to bottom in this py file
+## inventory slots are the legal player inventory slots for the object. No inv slots means the player cannot store this item in their inventory
+## Object Permissions
 # 'permissions' can be: 'locked_by' etc req different actions to get access to the object. See controllers.objPermissions()
+## Command List Inclusion / Limitations
+# limit to specific commands in a command group by listing them in the getCmds-OK: ['list'] for example. Or allow all commands in a group to be used on an object by simply adding the empty list e.g. putCmds-OK: []
 # IMPORTANT NOTE: all action command list keys MUST be in the format 'comand list name'+'-OK' so they are included in the collation of available commands in controllers.useObject()
 
-ob0006 = {
+objectsDB = {
+
+'ob0001' : {
+    'refs': ['key', 'red key'],
+    'name': 'Red key',
+    'desc': 'A particularly ornate, shiny, red, metal key', 
+    'location': 'partially hidden under a bush', 
+    'permissions': {}, 
+    'state': {}, 
+    'inventory-slot': 'utils', 
+    'getCmds-OK': [],
+    'putCmds-OK': [], 
+#    'intCmds-OK': [], 
+    'useCmds-OK': ['use']
+}
+,
+'ob0002' : {
+    'refs': ['box', 'big box', 'metal box', 'heavy box'],
+    'name': 'Big box',
+    'desc': 'A large, heavy, metal lock box', 
+    'location': 'under a tree', 
+    'permissions': {'locked_by': 'ob0001'}, 
+    'state': {}, 
+#    'inventory-slot': '', 
+#    'getCmds-OK': [],
+#    'putCmds-OK': [],
+    'intCmds-OK': [], 
+#    'useCmds-OK': []
+}
+,
+'ob0006' : {
     'refs': ['key', 'yellow key'],
     'name': 'Yellow key',
     'desc': 'A rusted old iron key covered in flaking yellow paint', 
+    'location': 'just sitting there', 
     'permissions': {}, 
-    'state': {}, 
+    'state': {'contained_by': {'object': 'ob0002'}}, 
+    'inventory-slot': 'utils', 
     'getCmds-OK': [],
     'putCmds-OK': [], 
-    'inventory-slot': 'utils', 
 #    'intCmds-OK': [], 
     'useCmds-OK': ['use']
 }
-
-ob0001 = {
-    'refs': ['key', 'red key'],
-    'name': 'Red key',
-    'desc': 'A particularly ornate, vermillion, shiny metal key', 
-    'permissions': {}, 
-    'state': {}, 
-    'getCmds-OK': [],
-    'putCmds-OK': [], 
-    'inventory-slot': 'utils', 
-#    'intCmds-OK': [], 
-    'useCmds-OK': ['use']
-}
-
-ob0005 = {
+,
+'ob0005' : {
     'refs': ['door', 'yellow door'],
     'name': 'Yellow door',
     'desc': 'An old dirty yellow door', 
-    'permissions': {'locked_by': ob0006}, 
-    'state': {'access_to': {'move': m010003}}, 
+    'location': 'covered in vines and roots', 
+    'permissions': {'locked_by': 'ob0006'}, 
+    'state': {'access_to': {'move': 'm010003'}}, 
+#    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-#    'inventory-slot': 'weapons', 
     'intCmds-OK': ['open', 'close'],
 #    'useCmds-OK': []
 }
-
-ob0004 = {
+,
+'ob0004' : {
     'refs': ['door', 'red door'],
     'name': 'Red door',
     'desc': 'A freshly painted red door', 
-    'permissions': {'locked_by': ob0001}, 
-    'state': {'access_to': {'move': m010003}}, 
+    'location': 'in the middle of a wall', 
+    'permissions': {'locked_by': 'ob0001'}, 
+    'state': {'access_to': {'move': 'm010003'}}, 
+#    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-#    'inventory-slot': 'weapons', 
     'intCmds-OK': ['open', 'close'],
 #    'useCmds-OK': []
 }
-
-ob0003 = {
+,
+'ob0003' : {
     'refs': ['dagger', 'sharp dagger'],
     'name': 'Sharp dagger',
     'desc': 'A vicious, sharp, pointy dagger', 
-    'permissions': {}, # could have a level requirement to use
-    'state': {}, 
+    'location': 'glinting on the floor', 
+    'permissions': {}, 
+    'state': {'contained_by': {'object': 'ob0002'}}, 
+    'inventory-slot': 'weapons', 
     'getCmds-OK': [],
     'putCmds-OK': [],
-    'inventory-slot': 'weapons', 
 #    'intCmds-OK': [],
     'useCmds-OK': ['stab', 'attack']
 }
 
-ob0002 = {
-    'refs': ['box', 'big box', 'metal box', 'heavy box'],
-    'name': 'Big box',
-    'desc': 'A large, heavy, metal lock box', 
-    'permissions': {'locked_by': ob0001}, # affects controllers.objPermissions and controllers.useObject "open" command
-    'state': {'access_to': {'object': ob0003}}, 
-#    'getCmds-OK': [],
-#    'putCmds-OK': [],
-#    'inventory-slot': '', 
-    'intCmds-OK': [], 
-#    'useCmds-OK': []
 }
-
-
 # == LOCATIONS ============================================================
 
 # locDb - list of all location keys/IDs
@@ -271,47 +301,67 @@ ob0002 = {
 # illegalMoveCmds - whitelist of special messages for certain locIDs
 
 # == Entry conditions
-e010001 = {'worldState': 'something'}
-e020001 = {'charState': 'something'}
+entryConditionsDB = {
+    
+'e010001' : {
+    'worldState': 'something'
+}
+,
+'e020001' : {
+    'charState': 'something'
+}
+
+}
 
 # == Leave conditions
-l010001 = {'worldState': 'something'}
-l020001 = {'charState': 'something'}
+leaveConditions : {
+
+'l010001' : {
+    'worldState': 'something'
+}
+,
+'l020001' : {
+    'charState': 'something'
+}
+
+}
 
 
 
 # == All location objects
-z0001 = {
+locDB = {
+
+'z0001' : {
     'locInputDesc': 'What will you do next?', 
     'locDesc': 'You are standing in a clearing. There is an exit to the NORTH through the dark trees. Another to the EAST along a well worn path. And a BOX at the edge of the clearing.', 
     'locAdditionalDesc': '', 
-    'entryConditions': [e010001, e020001], 
-    'leaveConditions': [l010001, l020001], 
-    'moveCmds': m010001, 
-#    'illegalMoveCmds': x010001,
-    'locObjects': [ob0001, ob0002]
+    'entryConditions': ['e010001', 'e020001'], 
+    'leaveConditions': ['l010001', 'l020001'], 
+    'moveCmds': 'm010001', 
+    'locObjects': ['ob0001', 'ob0002']
 }    
-
-z0002 = {
+,
+'z0002' : {
     'locInputDesc': 'What will you do now?', 
     'locDesc': 'There\'s nothing of interest here. You should turn around.', 
     'locAdditionalDesc': '', 
-    'entryConditions': [e010001, e020001], 
-    'leaveConditions': [l010001, l020001], 
-    'moveCmds': m010002
+    'entryConditions': ['e010001', 'e020001'], 
+    'leaveConditions': ['l010001', 'l020001'], 
+    'moveCmds': 'm010002'
 }   
-
-z0003 = {
+,
+'z0003' : {
     'locInputDesc': 'Now what?', 
     'locDesc': 'It sure is dark in here...', 
     'locAdditionalDesc': '', 
-    'entryConditions': [e010001, e020001], 
-    'leaveConditions': [l010001, l020001], 
-    'moveCmds': m010004
-#    'illegalMoveCmds': x010001
-}   
+    'entryConditions': ['e010001', 'e020001'], 
+    'leaveConditions': ['l010001', 'l020001'], 
+    'moveCmds': 'm010004'
+}
+
+}
 # == Locations database
-locDb = {'z0001':z0001, 'z0002':z0002, 'z0003':z0003}
+#locDb = {'z0001':z0001, 'z0002':z0002, 'z0003':z0003}
 
 
     
@@ -320,7 +370,7 @@ locDb = {'z0001':z0001, 'z0002':z0002, 'z0003':z0003}
 # Add another ROW for each new object that requires stateful data
 
 df_data = np.array([['','state_data'],
-                    ['ob0002',{'entry':'locked', 'contains':[ob0003]}],
+                    ['ob0002',{'entry':'locked', 'contains':['ob0003']}],
                     ['ob0004',{'entry':'locked'}],
                     ['ob0005',{'entry':'locked'}],
                     ])

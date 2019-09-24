@@ -10,6 +10,10 @@ Created on Fri Jul 13 09:24:51 2018
 debug = True
 #debug = False
 
+# Hide specific groups of debug messages, add group number to the list
+group_hide = []
+#group_hide = [1, 2]
+
 
 
 # == SETTINGS & TEXT STRINGS FOR THE GAME =====================================
