@@ -8,6 +8,7 @@ import debugger as de
 import random
 import transformers as tfs
 import settings as ss
+import gameData as gD
 
 # == TEXT LINES ============================================
 # feedback messages and descriptions
@@ -86,7 +87,7 @@ def render_Text(d, t="default"): #generic text renderer
         # trigger all monsters revealed
         #### INCOMPLETE
         
-    elif t == 'look for': # requires an obj
+    elif t in ('look for', 'where'): # requires an obj
         print(ss.inputFeedbackPre, "You see", d[0].lower(), d[1].lower())
 
     elif t == 'missing object': # part of controllers.useObject()
@@ -121,10 +122,12 @@ def render_prompt(d, t):
         return ss.inputQuestionPre + d + '\n' + ss.shortLnNewLine + '\n'
     
     elif t == 'did you mean':
-        return ss.inputQuestionPre + "Did you mean '" + d.lower() + "'? Y/N\n" + ss.shortLnNewLine + '\n'
+        return ss.inputQuestionPre + "I didnt understand '" + d[0].lower() + "' Did you mean '" + d[1].lower() + "'? Y/N\n" + ss.shortLnNewLine + '\n'
 
 
 def render_objectActions(d, cmd, t):
+    
+    de.bug(3, "data for interaction is", d)
     
     if t == "get-take" or t == "put-leave" or t == "open-OK":
         print(ss.inputFeedbackPre, "You", cmd, "the", d['name'].lower())
@@ -133,10 +136,10 @@ def render_objectActions(d, cmd, t):
         print(ss.inputFeedbackPre, "Use the", d['name'].lower(), "to do what?")
         
     elif t == "locked_by": # tell player what req obj is
-        print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  d['permissions']['locked_by']['name'].lower())
+        print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.objectsDB[d['permissions']['locked_by']]['name'].lower())
         
     elif t == "has-req-obj": # tell player to use the req obj
-        print(ss.inputFeedbackPre, "Use the", d['permissions']['locked_by']['name'].lower(), "to", cmd, "the", d['name'].lower())
+        print(ss.inputFeedbackPre, "Use the", gD.objectsDB[d['permissions']['locked_by']]['name'].lower(), "to", cmd, "the", d['name'].lower())
         
     elif t == "illegal": # user tried to do an illegal action on an object
         print(ss.inputFeedbackPre, "You can\'t", cmd, "the", d['name'].lower())

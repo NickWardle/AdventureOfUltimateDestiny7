@@ -90,7 +90,14 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
         # get an integer for every n+-cmd keys in parsed list
         c_pos = c_lst[0][0]
         c_pos = int(c_pos) - 1
-    
+        
+        # grab all junk words to let user know they are unrecognised
+        unknown_junk = ''
+        for i in tks[:c_pos]:
+            unknown_junk += str(i)
+            if tks.index(i) < len(tks[:c_pos]) - 1:
+                unknown_junk += ' '
+            
         # remove all (junk word) tokens from inputTokenized list that appear 
         # before the first valid parsed_cmd     
         new_tokens = tks[c_pos:]
@@ -100,12 +107,14 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
         de.bug(1, "3. confirm me this", user_conf)
         gD.PROMPT = 'reqconf'
         gD.USERCONF = user_conf
+        gD.UNKNOWN_INPUT = unknown_junk
         
     else: # just spawn default PROMPT again
         
         de.bug(1, "no input, just respawn default PROMPT")
         gD.PROMPT = False
         gD.USERCONF = None
+        gD.UNKNOWN_INPUT = None
     
 
 def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
@@ -239,6 +248,7 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             else: # if anything else treat it as a NO (bcoz 'n' = 'north')
                 gD.USERCONF = None
                 gD.PROMPT = False
+                gD.UNKNOWN_INPUT = None
             
             # return matched_cmds as False to parseInput()
             return False
@@ -403,22 +413,40 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
         a_conJunct = None
         a_via = None
         obj_ls = []
+        type_list = [None, None, None, None] # see grammar bit below
         
         for i in known_cmds:
             els = i.split("-")
             if els[0] == "conJuncts":
                 a_conJunct = i
+                type_list[known_cmds.index(i)] = 'jun'
             elif els[0] == "o":
                 # obj and via present
                 obj_ls.append(i)
+                type_list[known_cmds.index(i)] = 'obj'
             else:
                 a_cmd = i
+                type_list[known_cmds.index(i)] = 'cmd'
+                
+        
+        de.bug(1, "type_list", type_list)
         
         # assign obj and via
-        if len(obj_ls) > 1:
-            a_obj, a_via = obj_ls
-        elif len(obj_ls) == 1:
-            a_obj = obj_ls[0]
+        # COMPLEX GRAMMAR BIT #######
+        # if type_list is [cmd, jun, obj] then the obj is actually via
+        # e.g. look in the box = look (me) in the box
+        # or get in the box = get (me) in the box
+        
+        if type_list[0] == 'cmd' and type_list[1] == 'jun':
+            if len(obj_ls) > 1:
+                a_via = obj_ls[1] # ignore second obj in the list
+            elif len(obj_ls) == 1:
+                a_via = obj_ls[0]
+        else:
+            if len(obj_ls) > 1:
+                a_obj, a_via = obj_ls
+            elif len(obj_ls) == 1:
+                a_obj = obj_ls[0]
         
         # build and return the correctly ordered variables to gameExec
         parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
@@ -510,6 +538,7 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     if matched_cmds == False:
         de.bug("USERCONF", gD.USERCONF)
         de.bug("PROMPT", gD.PROMPT)
+        de.bug("UNKNOWN JUNK", gD.UNKNOWN_INPUT)
         matched_cmds = [None, None, None, None]
     elif matched_cmds != None:
         de.bug(1, "successfully matched these commands", matched_cmds)
@@ -533,7 +562,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         cmd_ky = cmd_spl[0]
         my_cmd = legalInputs[cmd_spl[0]][int(cmd_spl[1])]
         
-        if cmd_ky == "m":
+        if cmd_ky == "m": # MOVEMENT command
             
             for i in gD.moveCommandsDB[gD.LOCDATA['moveCmds']]:
                 for j in i[0]:
@@ -551,58 +580,99 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
             changeLoc(moveDest)
             
             
-        elif cmd_ky in gD.uiCmds.keys():
+        elif cmd_ky in gD.uiCmds.keys(): # UI command
             
-            # render the appropriate user feedback message for the cmd
-            if my_cmd in gD.uiCmds['playerCmds']:
-                if my_cmd == "inv" or my_cmd == "inventory":
-                    de.bug("TEMP render of player inventory", gD.PLAYERINV)
-
-            elif my_cmd in gD.uiCmds['generalCmds']: 
-                
-                # specific for commands that require objects
-                if my_cmd == 'look for':
-                    if obj != None:
-                        
-                        # consolidate obj reference word
-                        o_elems = obj.split("-")
-                        obj_ref = legalInputs[o_elems[0]][int(o_elems[1])]
-                        
-                        de.bug(2, obj_ref, "locDATA", gD.LOCDATA)
-                        
-                        for dc in gD.LOCDATA['locObjects']:
-                            if obj_ref in gD.objectsDB[dc]['refs']:
-                                obj_desc = gD.objectsDB[dc]['desc']
-                                obj_loc = gD.objectsDB[dc]['location']
-                        
-                        printText([obj_desc, obj_loc], my_cmd)
-                        
-                    else:
-                        renderers.render_actionHelp(my_cmd)
-                
-                else:
-                
-                    printText(uiData[my_cmd], my_cmd)
-                
-            else: 
-                de.bug("Error (doCommand): command '", my_cmd, "' not found in uiCmds")
+            # send to uiActions to handle the UI command
+            uiActions(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs, uiData)
             
-        elif cmd_ky in gD.actionCmds.keys():
+            
+        elif cmd_ky in gD.actionCmds.keys(): # ACTION command
             
             de.bug(2, "locDATA", gD.LOCDATA)
             
             # send the cmd and the obj to useObject for more detailed handling
             useObject(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs)
             
-        else:
+        else: # Command not known
+            
             de.bug("Error (doCommand): The command", cmd, "is not handled yet")
         
-        # can return a value to gameExec if required
+    elif obj != None: # empty cmd but we have a singleton obj
         
-    else:
+        # send to useObject anyway to give Player object help feedback
+        useObject(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs)
+            
+    else: # Too many params are None to do anything useful
         
         return False
+
+
+
+def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd handler
+    
+    # Resetting values
+    
+    # check for singleton object with no command (show help if it is)
+    my_cmd = None       
+    if cmd != None:
+        # consolidate cmd reference word
+        c_elems = cmd.split("-")
+        my_cmd = inps[c_elems[0]][int(c_elems[1])]
+
+    # render the appropriate user feedback message for the cmd
+    if my_cmd in gD.uiCmds['playerCmds']:
+        if my_cmd == "inv" or my_cmd == "inventory":
+            de.bug("TEMP render of player inventory", gD.PLAYERINV)
+
+    elif my_cmd in gD.uiCmds['generalCmds']: 
         
+        # specific for commands that only have a via (no obj) 
+        # e.g. look in the box / get in the box / go through the door
+        
+        if my_cmd in ('look') and via != None:
+            
+            de.bug(3, "We have a VIA UI command!", my_cmd, jun, via)
+            
+            ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ####
+            # Needs to take into account what is "contained_by" 
+            # the via, or any other similar states to be honest!
+            ########################################################
+        
+        elif my_cmd in ('get', 'go', 'walk') and via != None:
+            
+            de.bug(3, "We have a VIA movement type of command!", my_cmd, jun, via)
+            
+            ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ####
+            # Needs to handle changing location using the via  
+            ########################################################
+            
+        # specific for commands that require objects
+        elif my_cmd in ('look for', 'where'):
+            if obj != None:
+                
+                # consolidate obj reference word
+                o_elems = obj.split("-")
+                obj_ref = inps[o_elems[0]][int(o_elems[1])]
+                
+                de.bug(2, obj_ref, "locDATA", gD.LOCDATA)
+                
+                for dc in gD.LOCDATA['locObjects']:
+                    if obj_ref in gD.objectsDB[dc]['refs']:
+                        obj_desc = gD.objectsDB[dc]['desc']
+                        obj_loc = gD.objectsDB[dc]['location']
+                
+                printText([obj_desc, obj_loc], my_cmd)
+                
+            else:
+                renderers.render_actionHelp(my_cmd)
+        
+        else:
+        
+            printText(uiData[my_cmd], my_cmd)
+        
+    else: 
+        de.bug("Error (doCommand): command '", my_cmd, "' not found in uiCmds")
+
 
 
 def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
@@ -615,7 +685,7 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
     # myObj = box
     # conJunct = with
     # myVia = red key
-    # e.g. put the red key in the boxexit
+    # e.g. put the red key in the box
     # myCmd = put
     # myObj = red key
     # conJunct = in
@@ -625,10 +695,14 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
     # Resetting values
     oInfo = []
     obs = []
-
-    # consolidate cmd reference word
-    c_elems = cmd.split("-")
-    cmd_ref = inps[c_elems[0]][int(c_elems[1])]
+    
+    
+    # check for singleton object with no command (show help if it is)
+    cmd_ref = None       
+    if cmd != None:
+        # consolidate cmd reference word
+        c_elems = cmd.split("-")
+        cmd_ref = inps[c_elems[0]][int(c_elems[1])]
       
     # check against a singleton action command entry (show help if it is)
     if obj != None:
@@ -774,6 +848,8 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                             
                             # check if object permissions prevent action
                             can_open = tfs.objPermissions(o)
+                            de.bug(3, "lock perms are", can_open)
+                            
                             if can_open == "ok":
                                 # update object state according to o['state']
                                 objectState(o['state'])
@@ -783,9 +859,8 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                 renderers.render_objectActions(o, cmd_ref, "has-req-obj")
                                 
                             else:
-                                # send open-FAIL type and object to renderer
-                                t = can_open[0]
-                                renderers.render_objectActions(o, cmd_ref, t)
+                                # player does not have the req object
+                                renderers.render_objectActions(o, cmd_ref, can_open)
                     
                     else:
                         
@@ -815,7 +890,7 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
             # no objects at all at this loc
             de.bug('no objects')
             renderers.render_Text(obj_ref, 'missing object')
-    
+            
     else:
         # if singleton, show correct actionCmd feedback help
         renderers.render_actionHelp(cmd_ref)

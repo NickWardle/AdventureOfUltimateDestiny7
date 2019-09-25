@@ -42,15 +42,17 @@ def objPermissions(d): # access control to certain objects
             # match against each type
             if t == "locked_by":
                 
-                de.bug("checking lock perms")
+                de.bug(3, "checking lock perms")
                 # check if player has required object in their inventory
                 for cat, objs in gD.PLAYERINV.items():
                     if o in objs:
                         return "has-req-obj"
-                    else:
-                        return [t]
+                        break
+                
+                # player does NOT have req obj, just return state
+                return t
     else:
-        # no restrictions so return True
+        # no restrictions so return "ok" (not True, or it overrides every other condition check!)
         return "ok"
 
 

@@ -27,6 +27,8 @@ def init():
     PROMPT = False
     global USERCONF
     USERCONF = False
+    global UNKNOWN_INPUT
+    UNKNOWN_INPUT = None
     
 
 
@@ -42,7 +44,7 @@ def init():
 
 # == EXCLUDED COMMAND WORDS  =========================================
 
-ignoreWords = ['the', 'to', 'a', 'and']
+ignoreWords = ['the', 'to', 'a', 'and', '?', '!']
 
 
 # == UI COMMANDS  =====================================================

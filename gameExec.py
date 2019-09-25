@@ -105,7 +105,7 @@ while WIN == False:
         prompt = controllers.buildPrompt('default')
         myInput = input(prompt)
     elif gD.PROMPT == 'reqconf': # require Y/N reconfirmation
-        prompt = controllers.buildPrompt('did you mean', gD.USERCONF)
+        prompt = controllers.buildPrompt('did you mean', [gD.UNKNOWN_INPUT, gD.USERCONF])
         myInput = input(prompt)
     elif gD.PROMPT == 'autoresend': # no prompt, auto-resubmit commands
         gD.PROMPT = False
