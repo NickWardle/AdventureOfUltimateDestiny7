@@ -13,10 +13,10 @@ import numpy as np
 # == GLOBALS ============================================================
 
 def init():
+    global allInputRefs
     global LOCDATA
-    global GENCMDS
-    global ACTCMDS
     global PLAYERINV
+    PLAYERINV = player_inventory
     global DEFAULTLOC
     DEFAULTLOC = 'z0001'
     global CHEATER
@@ -30,7 +30,26 @@ def init():
     global UNKNOWN_INPUT
     UNKNOWN_INPUT = None
     
-
+    # create allInputRefs list (to match against tokens to find ANY possible match, not just matches legal within the current location)
+    allUICmds = gameDB['uiCmds']
+    allActCmds = gameDB['actionCmds']
+    allMoves = {}
+    allMoves_lst = []
+    for i, j in gameDB['moveCommandsDB'].items():
+        for k in j:
+            for l in k[0]:
+                allMoves_lst.append(l)
+    allMoves['m'] = list(set(allMoves_lst))
+    allObjects = {}
+    allObjects_lst = []
+    for i, j in gameDB['objectsDB'].items():
+        for k in j['refs']:
+            allObjects_lst.append(k)
+    # remove duplicates in allObjects_lst using a set{}
+    allObjects['o'] = list(set(allObjects_lst))
+    # explode all dicts to create a super-dict-DB with all inside flattened
+    allInputRefs = {**allActCmds, **allUICmds, **allMoves, **allObjects}
+    
 
 # def gameStory - adventure chapters, progression spine
 
@@ -47,6 +66,14 @@ def init():
 ignoreWords = ['the', 'to', 'a', 'and', '?', '!']
 
 
+
+##################### ALL THINGS DB #####################################
+#########################################################################
+gameDB = {
+##########################################################################
+
+
+
 # == UI COMMANDS  =====================================================
 
 # the idea with 'search' is that it reveals all objects at the location
@@ -54,16 +81,16 @@ ignoreWords = ['the', 'to', 'a', 'and', '?', '!']
 # the loc (deliberately). However, the risk is that you will uncover a
 # a MONSTER when you search..!
 
-uiCmds = {
+'uiCmds' : {
 
 # all general UI commands    
-'generalCmds' : ['look', 'look for', 'search', 'help', 'cheat', 'exit', 'where'],
+'generalCmds' : ['help', 'cheat', 'exit'],
 
 # all player charcter commands
 'playerCmds' : ['inv', 'inventory'],
 
 }
-
+,
 
 
 
@@ -74,62 +101,34 @@ uiCmds = {
 # NOTE all command arrays must be added explicitly to OBJECTS below
 # NOTE changing command words will affect OBJECTS that list them
 
-actionCmds = {
+'actionCmds' : {
 
 # conjunctions affect the outcome of an actionCmd on an object
 'conJuncts' : ['with', 'through', 'in', 'from', 'into', 'on', 'under', 'near', 'next', 'inside'],
 
-# object commands interact with objects without changing the world
-'objCmds' : ['look at', 'examine', 'e'],
+# navigation commands for moving around the spaces
+'navCmds' : ['go', 'walk', 'run', 'leave'],
+
+# exploration commands that reveal information about an object
+'exploreCmds' : ['look at', 'examine', 'search', 'look', 'look for', 'where', 'search for', 'find'],
 
 # get commands add an object to the player's hands
 'getCmds' : ['get', 'take', 'pick up'],
 
 # put commands move an object from the players hands to another location
-'putCmds' : ['leave', 'drop', 'put down', 'put up there', 'put', 'put up'],
+'putCmds' : ['leave', 'drop', 'put down', 'put'],
 
 # interaction commands change the state of an object
 # some objects need to be in the players hands first
-'intCmds' : ['open', 'close', 'move', 'get in', 'pick'],
+'intCmds' : ['open', 'close', 'move', 'pick'],
 
 # use commands consume one use of an object
 # some objects have infinite uses
 'useCmds' : ['use', 'drink', 'eat', 'attack', 'shoot', 'stab'],
 
 }
+,
 
-#### ACTION commands Dictionary object ###########
-#actionCmds = {'conJuncts':conJuncts, 'objCmds':objCmds, 'getCmds':getCmds, 'putCmds':putCmds, 'intCmds':intCmds, 'useCmds':useCmds}
-
-
-
-
-# == CHARACTER CONFIGURATION ===============================================
-
-# Set up the basic attributes of teh Player Character
-
-character_handedness = 'right' # 'right' or 'left'
-
-
-
-
-
-# == CHARACTER INVENTORY ===============================================
-
-# the player only has two hands and one is "default", set in Character Config
-player_hands = {'right': [], 'left': [], 'default': [character_handedness]}
-
-### When the structure of this dictionary changes, adjust parsing in controllers.objPermissions()
-player_inventory = {'utils': [], 'weapons':[], 'food':[], 'clothes':[]}
-
-
-
-# == MOBS ============================================================
-
-# npcs
-# monsters/opponents
-
-mob0001 = {}
 
 
 
@@ -137,7 +136,7 @@ mob0001 = {}
 
 
 # == ALL MOVES ============================================================
-moveCommandsDB = {
+'moveCommandsDB' : {
 
 'm010001' : [ 
     [
@@ -162,7 +161,7 @@ moveCommandsDB = {
 ,  
 'm010003' : [ 
     [
-        ["in", "inside", "into"], 
+        ["inside", "into"], 
         "You step into the dark doorway", 
         'z0003'
     ]
@@ -170,14 +169,15 @@ moveCommandsDB = {
 ,
 'm010004' : [ 
     [
-        ["out", "outside"], 
+        ["outside"], 
         "You step back out into the sunlight", 
         'z0001'
     ]
 ]  
+ 
     
 }
-
+,
 
     
 # == OBJECTS ============================================================
@@ -190,6 +190,7 @@ moveCommandsDB = {
 # teleporters, vehicles, wormholes - move you to other locations
 
 ## location is an optional additional description of the place the object can be found
+## NOTE: objects could have an "orthogonal location", or be associated with a "point of interest", such as "north", or "the old tree". Then you could "search around the old tree". And you could build locations out of the component p.o.i that comprise it i.e. the exits and the poi's in it. But this is complex.
 ## state describes conditions like 'locked_by' or 'contained_by'. Child objects always have the state i.e. boxes do not 'contain', children are 'contained_by' so that objects can be declared in the right order top to bottom in this py file
 ## inventory slots are the legal player inventory slots for the object. No inv slots means the player cannot store this item in their inventory
 ## Object Permissions
@@ -198,7 +199,7 @@ moveCommandsDB = {
 # limit to specific commands in a command group by listing them in the getCmds-OK: ['list'] for example. Or allow all commands in a group to be used on an object by simply adding the empty list e.g. putCmds-OK: []
 # IMPORTANT NOTE: all action command list keys MUST be in the format 'comand list name'+'-OK' so they are included in the collation of available commands in controllers.useObject()
 
-objectsDB = {
+'objectsDB' : {
 
 'ob0001' : {
     'refs': ['key', 'red key'],
@@ -285,6 +286,62 @@ objectsDB = {
 }
 
 }
+,
+
+
+
+
+
+
+
+# == MOBS ============================================================
+
+# npcs
+# monsters/opponents
+
+'mobsDB' : {
+
+'mob0001' : {
+    'refs' : ['monster']
+}
+
+}
+
+        
+        
+####################### END OF ALL THINGS DB #############################        
+}
+##########################################################################
+
+
+
+# == CHARACTER CONFIGURATION ===============================================
+
+# Set up the basic attributes of teh Player Character
+
+character_handedness = 'right' # 'right' or 'left'
+
+
+
+
+
+# == CHARACTER INVENTORY ===============================================
+
+# the player only has two hands and one is "default", set in Character Config
+player_hands = {'right': [], 'left': [], 'default': [character_handedness]}
+
+### When the structure of this dictionary changes, adjust parsing in controllers.objPermissions()
+player_inventory = {'utils': [], 'weapons':[], 'food':[], 'clothes':[]}
+
+
+
+
+
+
+
+
+
+
 # == LOCATIONS ============================================================
 
 # locDb - list of all location keys/IDs
@@ -301,33 +358,6 @@ objectsDB = {
 # moveCmds - list of valid moveCmds, moveDescs and associated locIDs and moveConditions (optional)
 # moveCmds - [[["N", "North"] "moveDesc", ?locID, ?["pass description", "fail description"]], [["Open", "box"] "moveDesc", ?locID, ?["pass description", "fail description"]]
 # illegalMoveCmds - whitelist of special messages for certain locIDs
-
-# == Entry conditions
-entryConditionsDB = {
-    
-'e010001' : {
-    'worldState': 'something'
-}
-,
-'e020001' : {
-    'charState': 'something'
-}
-
-}
-
-# == Leave conditions
-leaveConditions : {
-
-'l010001' : {
-    'worldState': 'something'
-}
-,
-'l020001' : {
-    'charState': 'something'
-}
-
-}
-
 
 
 # == All location objects
@@ -362,8 +392,33 @@ locDB = {
 }
 
 }
-# == Locations database
-#locDb = {'z0001':z0001, 'z0002':z0002, 'z0003':z0003}
+
+
+# == Entry conditions
+entryConditionsDB = {
+    
+'e010001' : {
+    'worldState': 'something'
+}
+,
+'e020001' : {
+    'charState': 'something'
+}
+
+}
+
+# == Leave conditions
+leaveConditions : {
+
+'l010001' : {
+    'worldState': 'something'
+}
+,
+'l020001' : {
+    'charState': 'something'
+}
+
+}
 
 
     

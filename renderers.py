@@ -10,6 +10,8 @@ import transformers as tfs
 import settings as ss
 import gameData as gD
 
+
+
 # == TEXT LINES ============================================
 # feedback messages and descriptions
 
@@ -63,11 +65,9 @@ def render_Text(d, t="default"): #generic text renderer
         print(ss.inputFeedbackPre, "Interaction commands", end=": ") # end= prevents new line
         
         # retrieve commands in array data
-        tmp = []
-        for i in objCmds:
-            tmp.append(i)
+        tmp = [i for i in objCmds]
         
-        # list the GENERAL commands
+        # list the OBJECT commands
         print(tfs.listify(tmp))
 
     elif t == 'search': #search command
@@ -84,10 +84,10 @@ def render_Text(d, t="default"): #generic text renderer
         
         # show all monsters in the location!
         
-        # trigger all monsters revealed
+        #TODO: Make search trigger all monsters revealed
         #### INCOMPLETE
         
-    elif t in ('look for', 'where'): # requires an obj
+    elif t in ('look for', 'where'): # requires an obj [desc,location] array
         print(ss.inputFeedbackPre, "You see", d[0].lower(), d[1].lower())
 
     elif t == 'missing object': # part of controllers.useObject()
@@ -136,10 +136,10 @@ def render_objectActions(d, cmd, t):
         print(ss.inputFeedbackPre, "Use the", d['name'].lower(), "to do what?")
         
     elif t == "locked_by": # tell player what req obj is
-        print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.objectsDB[d['permissions']['locked_by']]['name'].lower())
+        print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
         
     elif t == "has-req-obj": # tell player to use the req obj
-        print(ss.inputFeedbackPre, "Use the", gD.objectsDB[d['permissions']['locked_by']]['name'].lower(), "to", cmd, "the", d['name'].lower())
+        print(ss.inputFeedbackPre, "Use the", gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower(), "to", cmd, "the", d['name'].lower())
         
     elif t == "illegal": # user tried to do an illegal action on an object
         print(ss.inputFeedbackPre, "You can\'t", cmd, "the", d['name'].lower())
@@ -176,6 +176,9 @@ def render_objectHelp(d, n):
 
 
 def render_locScreen(d): #generic location renderer
+    
+    #TODO: Want to build a location out of the available points of interest
+    # such as exits: orthogonal and object-based
     
     # show location description
     print(d['locDesc'])

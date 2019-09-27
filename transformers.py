@@ -1,6 +1,8 @@
 import debugger as de
 import gameData as gD
 
+
+
 ## == Helpful code snippets to transform data and return it
 
 def listify(d, terminator='and', case='l'):
@@ -30,14 +32,18 @@ def listify(d, terminator='and', case='l'):
         return myListString.upper()
     else:
         print("::Error:: Missing argument 'case' = l/c/u for transformers.listify()")
-        #### INCOMPLETE HANDLE ERROR WITH FUNCTION
+        #TODO: Handle transformers.listify() error with proper error function
 
 
 def objPermissions(d): # access control to certain objects
     
+    perm_ok = False
+    
     # check permissions on the object
     if len(d['permissions']) > 0:
         for t, o in d['permissions'].items():
+            
+            o_name = gD.gameDB['objectsDB'][o]['name'] # just a reference to match on
             
             # match against each type
             if t == "locked_by":
@@ -45,18 +51,22 @@ def objPermissions(d): # access control to certain objects
                 de.bug(3, "checking lock perms")
                 # check if player has required object in their inventory
                 for cat, objs in gD.PLAYERINV.items():
-                    if o in objs:
-                        return "has-req-obj"
-                        break
+                    for ob in objs:
+                        if o_name == ob['name']: # this currently works for 'utils' data format
+                            perm_ok = True            
                 
-                # player does NOT have req obj, just return state
-                return t
+        if perm_ok == True:
+            # player has the req obj
+            return "has-req-obj"
+        else:
+            # player does NOT have req obj, just return state
+            return t
     else:
         # no restrictions so return "ok" (not True, or it overrides every other condition check!)
         return "ok"
 
 
-def playerOwns(d):
+def getInventorySlot(d):
     
      # get object's inventory-slot
     inv_slot = d['inventory-slot']
@@ -71,7 +81,7 @@ def playerOwns(d):
 def updateInventory(d, t):
     
     # check if player owns obj and get inv_slot (by return)
-    s = playerOwns(d)
+    s = getInventorySlot(d)
     
     # add to inventory
     if t == "add":

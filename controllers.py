@@ -14,7 +14,6 @@ from nltk.tokenize import word_tokenize
 #import errorHandler
 
 
-
 # == CONTROLLERS =================================================
 # modules that take inputs from player, or other modules, and update the models
 
@@ -66,10 +65,7 @@ def tokenizeInput(inp): # tokenise the input
     outputTokens = word_tokenize(inp)
     
     # strip out all 'ignored words' to REDUCE inputTokenized
-    rm_list = []
-    for w in outputTokens:
-        if w in gD.ignoreWords:
-            rm_list.append(w)
+    rm_list = [w for w in outputTokens if w in gD.ignoreWords]
     
     for r in rm_list:
         outputTokens.remove(r)
@@ -80,10 +76,8 @@ def tokenizeInput(inp): # tokenise the input
 def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
     
     # get first 'cmd' in parsed_list of cmds
-    c_lst = []
-    for a, b in pdl.items():
-        c_lst.append(a)
-        
+    c_lst = [a for a, b in pdl.items()]
+    
     # handle empty c_lst - which could mean that the input was NONE
     # i.e. player probably just pressed RETURN
     if len(c_lst) > 0:
@@ -117,7 +111,7 @@ def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
         gD.UNKNOWN_INPUT = None
     
 
-def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
+def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns):
 
     # verify that the input contains the right number of 
     # cmd words to complete a valid command phrase
@@ -135,8 +129,8 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
         for rf in cmd_mtch:
             rf_elems = rf.split("-")
             
-            # find the appropriate cmd_list in legalinputs
-            for a, b in legalinputs.items():
+            # find the appropriate cmd_list in allInputRefs
+            for a, b in gD.allInputRefs.items():
                 if rf_elems[0] == a:
                     cmd_wrds = b[int(rf_elems[1])]
                         
@@ -164,9 +158,9 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
             
             # handle each of the types of command
             if (cmd_elems[0] == 'o') or (cmd_elems[0] == 'm'):
-              cmd_lst = legalinputs[cmd_elems[0]]
+              cmd_lst = gD.allInputRefs[cmd_elems[0]]
             else:
-             cmd_lst = gD.actionCmds[cmd_elems[0]]
+             cmd_lst = gD.gameDB['actionCmds'][cmd_elems[0]]
             
             if cmd_elems[0] == 'o':
                 suf = "-obj"
@@ -217,7 +211,7 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns, legalinputs):
         
     
 
-def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
+def wrdChecker(tkns, parsed_cmds, key_num=1):
     
     # If parsed_cmds does NOT have a 'xxx'+key_num then the
     # input probably contained junk words before the commands
@@ -377,7 +371,7 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             for s in final_candidates:
                 if len(s) > 1:
                     de.bug(1, "sending this to lengthChecker", s)
-                    valid = cmdLengthChecker(s, parsed_cmds, tkns, legalinputs)
+                    valid = cmdLengthChecker(s, parsed_cmds, tkns)
                     de.bug(1, "after cmdLengthChecker() matched cmd is", valid)
                     
                     if valid != False:
@@ -397,7 +391,7 @@ def wrdChecker(tkns, parsed_cmds, legalinputs, key_num=1):
             
             de.bug(1, "single word command detected")
             for x, y in parsed_cmds.items():
-                valid = cmdLengthChecker(y, parsed_cmds, tkns, legalinputs)
+                valid = cmdLengthChecker(y, parsed_cmds, tkns)
                 if valid != False:
                     known_cmds.append(valid)
                 else: 
@@ -470,7 +464,7 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
         # check against every type of input and parse 
         # out useful references for handling back in gameExec  
         
-        for j, k in legalinputs.items():
+        for j, k in gD.allInputRefs.items(): # used to be legalinputs.items()
             # for each cmd in each cmd group
             for l in k:
                 # is the word in the cmd group
@@ -533,7 +527,7 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     
     # Now check the words in that parsed cmds list for matches
     if len(parsed_cmds) > 0:
-        matched_cmds = wrdChecker(tkns, parsed_cmds, legalinputs)
+        matched_cmds = wrdChecker(tkns, parsed_cmds)
     
     if matched_cmds == False:
         de.bug("USERCONF", gD.USERCONF)
@@ -550,8 +544,6 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
     return matched_cmds
 
 
-
-
 def doCommand(cmd, obj, jun, via, legalInputs, uiData):
     
     if cmd != None:
@@ -564,7 +556,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         
         if cmd_ky == "m": # MOVEMENT command
             
-            for i in gD.moveCommandsDB[gD.LOCDATA['moveCmds']]:
+            for i in gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds']]:
                 for j in i[0]:
                     if my_cmd == j:
                         moveDesc = i[1]
@@ -580,13 +572,13 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
             changeLoc(moveDest)
             
             
-        elif cmd_ky in gD.uiCmds.keys(): # UI command
+        elif cmd_ky in gD.gameDB['uiCmds'].keys(): # UI command
             
             # send to uiActions to handle the UI command
             uiActions(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs, uiData)
             
             
-        elif cmd_ky in gD.actionCmds.keys(): # ACTION command
+        elif cmd_ky in gD.gameDB['actionCmds'].keys(): # ACTION command
             
             de.bug(2, "locDATA", gD.LOCDATA)
             
@@ -605,69 +597,38 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
     else: # Too many params are None to do anything useful
         
         return False
-
+    
 
 
 def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd handler
     
     # Resetting values
+    my_cmd = None
     
     # check for singleton object with no command (show help if it is)
-    my_cmd = None       
     if cmd != None:
+        
         # consolidate cmd reference word
         c_elems = cmd.split("-")
         my_cmd = inps[c_elems[0]][int(c_elems[1])]
 
     # render the appropriate user feedback message for the cmd
-    if my_cmd in gD.uiCmds['playerCmds']:
+    if my_cmd in gD.gameDB['uiCmds']['playerCmds']:
+        
         if my_cmd == "inv" or my_cmd == "inventory":
+            
+            #TODO: Get a proper render for the Player's Inventory designed in renders
+            
+            ########## INCOMPLETE #################
+            # Need to get a proper render for the 
+            # Player's Inventory designed in renders
+            #######################################
+            
             de.bug("TEMP render of player inventory", gD.PLAYERINV)
 
-    elif my_cmd in gD.uiCmds['generalCmds']: 
+    elif my_cmd in gD.gameDB['uiCmds']['generalCmds']: 
         
-        # specific for commands that only have a via (no obj) 
-        # e.g. look in the box / get in the box / go through the door
-        
-        if my_cmd in ('look') and via != None:
-            
-            de.bug(3, "We have a VIA UI command!", my_cmd, jun, via)
-            
-            ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ####
-            # Needs to take into account what is "contained_by" 
-            # the via, or any other similar states to be honest!
-            ########################################################
-        
-        elif my_cmd in ('get', 'go', 'walk') and via != None:
-            
-            de.bug(3, "We have a VIA movement type of command!", my_cmd, jun, via)
-            
-            ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ####
-            # Needs to handle changing location using the via  
-            ########################################################
-            
-        # specific for commands that require objects
-        elif my_cmd in ('look for', 'where'):
-            if obj != None:
-                
-                # consolidate obj reference word
-                o_elems = obj.split("-")
-                obj_ref = inps[o_elems[0]][int(o_elems[1])]
-                
-                de.bug(2, obj_ref, "locDATA", gD.LOCDATA)
-                
-                for dc in gD.LOCDATA['locObjects']:
-                    if obj_ref in gD.objectsDB[dc]['refs']:
-                        obj_desc = gD.objectsDB[dc]['desc']
-                        obj_loc = gD.objectsDB[dc]['location']
-                
-                printText([obj_desc, obj_loc], my_cmd)
-                
-            else:
-                renderers.render_actionHelp(my_cmd)
-        
-        else:
-        
+            # Just print out the message for the UI command
             printText(uiData[my_cmd], my_cmd)
         
     else: 
@@ -677,25 +638,11 @@ def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd hand
 
 def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
     
-    # so that you have a CMD that affects an OBJ
-    # potentially qualified by a conJUNCT
-    # with an optional VIA
-    # e.g. open the box with the red key
-    # myCmd = open
-    # myObj = box
-    # conJunct = with
-    # myVia = red key
-    # e.g. put the red key in the box
-    # myCmd = put
-    # myObj = red key
-    # conJunct = in
-    # myVia = box
+    # E.G. cmd: generalCmds-0 | obj: o-7 | jun: conJuncts-2 | via: o-11
     
-   
     # Resetting values
     oInfo = []
     obs = []
-    
     
     # check for singleton object with no command (show help if it is)
     cmd_ref = None       
@@ -707,12 +654,18 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
     # check against a singleton action command entry (show help if it is)
     if obj != None:
         
-        for o in obs_list:
-            obs.append(gD.objectsDB[o])
+        # build location's objects as a list of dicts [{},{}] etc.
+        obs = [gD.gameDB['objectsDB'][o] for o in obs_list]
         
-        # consolidate obj reference word
+        # consolidate obj reference word from allInputRefs global
         o_elems = obj.split("-")
-        obj_ref = inps[o_elems[0]][int(o_elems[1])]
+        obj_ref = gD.allInputRefs[o_elems[0]][int(o_elems[1])] # e.g.['o'][3]
+        
+        # get obj desc, loc etc.
+        for dc in gD.LOCDATA['locObjects']:
+            if obj_ref in gD.gameDB['objectsDB'][dc]['refs']:
+                obj_desc = gD.gameDB['objectsDB'][dc]['desc']
+                obj_loc = gD.gameDB['objectsDB'][dc]['location']
         
         if via != None and jun != None:
             # consolidate via and conJunct reference word
@@ -741,33 +694,67 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                 # extract name-string of command list
                                 # and get all cmds in that command list
                                 w = k[:-3] 
-                                a = gD.actionCmds[w]
+                                a = gD.gameDB['actionCmds'][w]
                                 for i in range(len(a)):
                                     oInfo.append(a[i])
 
                     
                     ### == obj COMMANDS: look at, examine etc. =============
                     
-                    
                     if cmd_ref == "look at":
-                        renderers.render_Text(o['desc'], 'look at')
+                        
+                        # show object description
+                        printText(o['desc'], 'look at')
         
                     elif cmd_ref == "examine":
                         #add name to oInfo for renderer
                         oInfo.append(o['name'])
                         
-                        renderers.render_Text(oInfo, 'examine')
+                        printText(oInfo, 'examine')
                         
+                    ### == specific explore COMMANDS: look in / under etc ====   
                         
-                    ### == get, put, use, int COMMANDS =====================
+                    elif cmd_ref in ('look') and via != None:
+            
+                        # specific for commands that only have a via (no obj) 
+                        # e.g. look in the box / get in the box / go through the door
+                    
+                        de.bug(3, "We have a VIA UI command!", cmd_ref, jun, via)
+                    
+                        #TODO: Handle "contained_by" cmd, jun, obj
+                        
+                        ### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ###
+                        # Needs to take into account what is "contained_by" 
+                        # the via, or any other similar states to be honest!
+                        #####################################################
+                    
+                    ### == explore COMMANDS: look for, where etc ===========
+                    
+                    elif cmd_ref in ('look for', 'where'):
+                        
+                        # show both obj desc and loc together                        
+                        printText([obj_desc, obj_loc], cmd_ref)
+                        
+                    ### == navigation COMMANDS w/o VIA e.g. 'go in; =========
                 
+                    elif cmd_ref in ('get', 'go', 'walk') and via != None:
+                    
+                        de.bug(3, "We have a VIA movement type of command!", cmd_ref, jun, via)
+                    
+                    #TODO: Handle changing location with a cmd, jun, via input
+                    
+                    ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ##
+                    # Needs to handle changing location using the via  
+                    ########################################################
+                            
+                    ### == get, put, use, int COMMANDS =====================
                 
                     # check legal action for the object
                     if cmd_ref in oInfo:
                           
                         # get command add object to inventory
                         # check all get aliases
-                        for i in gD.ACTCMDS['getCmds']:
+                        for i in gD.gameDB['actionCmds']['getCmds']:
                             if cmd_ref == i:
                                 
                                 # remove obj from inv
@@ -776,6 +763,8 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                     # render feedback to player
                                     renderers.render_objectActions(o, cmd_ref, "get-take")
                                     
+                                    #TODO: show Player Inventory when new obj acquired
+                                    
                                     ### INCOMPLETE NEED TO call
                                     ## PLAYER INV renderer here
 #                                    print(gD.PLAYERINV)
@@ -783,24 +772,20 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                 else:
                                     
                                     # trying to add obj ALREADY in inv
-                                    renderers.render_Text(o['name'], 'already in inv')
+                                    printText(o['name'], 'already in inv')
                                 
                         # put command remove object from inventory
                         # check all put aliases
-                        for i in gD.ACTCMDS['putCmds']:
+                        for i in gD.gameDB['actionCmds']['putCmds']:
                             if cmd_ref == i:
-                                
-                                # INCOMPLETE don't be specific on 
-                                # the item you are dropping if
-                                # its not in your inv
-                                # as it could be any one of several
-                                # items in that inv slot!
                                 
                                 # remove obj from inv
                                 if tfs.updateInventory(o, "remove") != False:
                                 
                                     # render feedback to player
                                     renderers.render_objectActions(o, cmd_ref, "put-leave")
+                                    
+                                    #TODO: Show Inventory on drop object
                                     
                                     ### INCOMPLETE NEED TO call
                                     ## PLAYER INV renderer here
@@ -809,16 +794,18 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                 else:
                                     
                                     # trying to remove obj not in inv
-                                    renderers.render_Text(o['name'], 'not in inv')
+                                    printText(o['name'], 'not in inv')
                     
                         # use commands do object custom action
                         if cmd_ref == "use":
                             
                             # check used obj is in player inv
-                            if tfs.playerOwns(o) != False:
+                            if tfs.getInventorySlot(o) != False:
                             
                                 # no target, singleton "use"
                                 if via != None:
+                                    
+                                    #TODO: The USE command and results of it
                                     
                                     ## INCOMPLETE . JUST ALL OF THIS!!
                                     
@@ -842,7 +829,7 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                     
                             else:
                                 # trying to use obj not in inv
-                                renderers.render_Text(o['name'], 'not in inv')
+                                printText(o['name'], 'not in inv')
                         
                         if cmd_ref == "open":
                             
@@ -862,21 +849,26 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
                                 # player does not have the req object
                                 renderers.render_objectActions(o, cmd_ref, can_open)
                     
+                    
+                    # No command in player input
+                    elif cmd_ref == None:
+                        # User referenced an object WITHOUT putting
+                        # an action command - So give them help
+                        renderers.render_objectHelp(oInfo, o['name'])
+                            
+                        
+                    elif cmd_ref in gD.gameDB['actionCmds']['exploreCmds']:
+                        
+                        # ignore these explore commands
+                        de.bug(2, "this command is ok")
+                        
                     else:
                         
                         # must be an illegal command for this object
                         # feedback 'you can't do that to this object'
                         t = "illegal"
-                        renderers.render_objectActions(o, cmd_ref, t)
-                            
-                    
-                    ### == NO COMMAND GIVEN ==========================
-                    
-                    if cmd_ref == None:
-                        # User referenced an object WITHOUT putting
-                        # an action command - So give them help
-                        renderers.render_objectHelp(oInfo, o['name'])
-                            
+                        renderers.render_objectActions(o, cmd_ref, t)    
+                        
                     # exit this loop, as we have actioned our player input
                     missing_object = False
                     break
@@ -884,12 +876,12 @@ def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
             # handle input reference to an object that is not at this loc
             if missing_object == True:
                 de.bug('missing object')
-                renderers.render_Text(obj_ref, 'missing object')
+                printText(obj_ref, 'missing object')
     
         else:
             # no objects at all at this loc
             de.bug('no objects')
-            renderers.render_Text(obj_ref, 'missing object')
+            printText(obj_ref, 'missing object')
             
     else:
         # if singleton, show correct actionCmd feedback help

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jul 13 09:24:51 2018
+#Created on Fri Jul 13 09:24:51 2018
 
-@author: nick.wardle
-"""
+# @author: nick.wardle
+
 import debugger as de
 import gameData as gD
 import settings as ss
@@ -15,13 +14,9 @@ import errorHandler
 
 # initialise GLOBALS
 gD.init()
-gD.GENCMDS = gD.uiCmds
-gD.ACTCMDS = gD.actionCmds
-gD.PLAYERINV = gD.player_inventory
 
-# set up INPUT commands lists
-gCmds = gD.GENCMDS['generalCmds']
-aCmds = gD.ACTCMDS
+de.bug(1, "allInputRefs", gD.allInputRefs)
+
 
 
 # == RENDER FIRST/DEFAULT LOCATION == #############################
@@ -43,7 +38,7 @@ while WIN == False:
 
     
     # get all legal MOVES for location 
-    moveObj = gD.moveCommandsDB[gD.LOCDATA['moveCmds']]
+    moveObj = gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds']]
     legalMoves = []
     moveDesc = []
     moveDest = []
@@ -61,7 +56,7 @@ while WIN == False:
             allObjects.append(i)
         objRefs = []
         for i in allObjects:
-            for j in gD.objectsDB[i]['refs']:
+            for j in gD.gameDB['objectsDB'][i]['refs']:
                 objRefs.append(j)
         
     
@@ -69,7 +64,6 @@ while WIN == False:
     
     # group all LEGALINPUTS into one library to match against
     # as individual 'command' entries
-    # [legalMoves, objRefs, UI, actions]
 
     legalInputsA = {}
     legalInputsB = {}
@@ -83,8 +77,8 @@ while WIN == False:
             allLegalMoves.append(j)
     legalInputsA['m'] = allLegalMoves
     legalInputsA['o'] = objRefs
-    legalInputsB = gD.uiCmds
-    legalInputsC = gD.actionCmds
+    legalInputsB = gD.gameDB['uiCmds']
+    legalInputsC = gD.gameDB['actionCmds']
     legalInputs = {**legalInputsC, **legalInputsB, **legalInputsA}
     de.bug(1, "legalInputs", legalInputs)
     
@@ -96,7 +90,7 @@ while WIN == False:
     # == SET UP DATA == ##########################################
     
     # set DATA package to send with each 'general' UI command
-    uiData = {'search':allObjects, 'cheat':legalMoves, 'help':[gD.uiCmds, aCmds['objCmds']], 'exit':'', 'look':''}
+    uiData = {'search':allObjects, 'cheat':legalMoves, 'help':[gD.gameDB['uiCmds'], gD.gameDB['actionCmds']['exploreCmds']], 'exit':'', 'look':''}
     
     
     # == CHECK INPUT ==  BUILD PLAYER PROMPT  == #################
@@ -119,7 +113,7 @@ while WIN == False:
        
     # parse and return information from the tokenized input data
     myCmd, myObj, conJunct, myVia = controllers.parseInput(inputTokenized, legalInputs)
-    de.bug("returned to gameExec with these:", myCmd, myObj, conJunct, myVia)
+    de.bug(1, "returned to gameExec with these:", myCmd, myObj, conJunct, myVia)
     
     # deal with returned information: perform actions, display feedback
     cmd_result = controllers.doCommand(myCmd, myObj, conJunct, myVia, legalInputs, uiData)

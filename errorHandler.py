@@ -24,7 +24,7 @@ def inputError(loc=0): #optional location param
 def throwError(s, dd):
     de.bug("we are in throwError() with this data: ", dd)
     # error types and data truths
-    theTruth = {'uiSpawn':gD.uiCmds}
+    theTruth = {'uiSpawn':gD.gameDB['uiCmds']}
     
     # throw an error of source s
     if s in theTruth:
