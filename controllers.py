@@ -48,6 +48,7 @@ def changeLoc(loc): #generic location changer
     if loc in gD.locDB:
         
         # get current location data and make it GLOBAL
+        gD.CURRENT_LOC = loc
         gD.LOCDATA = gD.locDB[loc]
         
     else:
@@ -379,7 +380,7 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
                         known_cmds.append(valid)
                         de.bug(1, "found this valid cmd", valid)
                     else:
-                        de.bug("not enough matches to complete command phrase - invalid command:", valid)
+                        de.bug(1, "not enough matches to complete command phrase - invalid command:", valid)
                     
                 else:
                     
@@ -575,7 +576,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         elif cmd_ky in gD.gameDB['uiCmds'].keys(): # UI command
             
             # send to uiActions to handle the UI command
-            uiActions(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs, uiData)
+            uiActions(cmd, obj, jun, via, legalInputs, uiData)
             
             
         elif cmd_ky in gD.gameDB['actionCmds'].keys(): # ACTION command
@@ -583,7 +584,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
             de.bug(2, "locDATA", gD.LOCDATA)
             
             # send the cmd and the obj to useObject for more detailed handling
-            useObject(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs)
+            useObject(cmd, obj, jun, via, legalInputs)
             
         else: # Command not known
             
@@ -592,7 +593,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
     elif obj != None: # empty cmd but we have a singleton obj
         
         # send to useObject anyway to give Player object help feedback
-        useObject(cmd, obj, jun, via, gD.LOCDATA['locObjects'], legalInputs)
+        useObject(cmd, obj, jun, via, legalInputs)
             
     else: # Too many params are None to do anything useful
         
@@ -600,7 +601,7 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
     
 
 
-def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd handler
+def uiActions(cmd, obj, jun, via, inps, uiData): # generic UI cmd handler
     
     # Resetting values
     my_cmd = None
@@ -617,14 +618,7 @@ def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd hand
         
         if my_cmd == "inv" or my_cmd == "inventory":
             
-            #TODO: Get a proper render for the Player's Inventory designed in renders
-            
-            ########## INCOMPLETE #################
-            # Need to get a proper render for the 
-            # Player's Inventory designed in renders
-            #######################################
-            
-            de.bug("TEMP render of player inventory", gD.PLAYERINV)
+            renderers.render_charInventory()
 
     elif my_cmd in gD.gameDB['uiCmds']['generalCmds']: 
         
@@ -636,281 +630,408 @@ def uiActions(cmd, obj, jun, via, obs_list, inps, uiData): # generic UI cmd hand
 
 
 
-def useObject(cmd, obj, jun, via, obs_list, inps): # generic Object handler
+def useObject(cmd, obj, jun, via, inps): # generic Object handler
     
     # E.G. cmd: generalCmds-0 | obj: o-7 | jun: conJuncts-2 | via: o-11
     
     # Resetting values
-    oInfo = []
-    obs = []
+    obs_list = gD.LOCDATA['locObjects']
+    obj_cmds = [] # list of all local object valid COMMAND WORDS e.g. "get"
+    obs = [] # list of all local OBJECT complete dicts {}
+    cmd_ref = None
+    obj_ref = None
+    via_ref = None
+    jun_ref = None
+    obj_id = None
+    this_obj = None
+    this_via = None
+    missing_object = True
     
-    # check for singleton object with no command (show help if it is)
-    cmd_ref = None       
+    
+    
+    # consolidate reference words
     if cmd != None:
-        # consolidate cmd reference word
         c_elems = cmd.split("-")
-        cmd_ref = inps[c_elems[0]][int(c_elems[1])]
-      
-    # check against a singleton action command entry (show help if it is)
+        cmd_ref = inps[c_elems[0]][int(c_elems[1])] # inps is legalInputs
+
+    if via != None:
+        v_elems = via.split("-")
+        via_ref = gD.allInputRefs[v_elems[0]][int(v_elems[1])] # ALL possible
+        for u, v in gD.gameDB['objectsDB'].items():
+            if via_ref in v['refs']:
+                via_id = u # set script global via_id for refs to gD.gameDB
+                this_via = v # set script global this_via for other functions
+        
+    if jun != None:
+        j_elems = jun.split("-")
+        jun_ref = inps[j_elems[0]][int(j_elems[1])]
+
     if obj != None:
-        
-        # build location's objects as a list of dicts [{},{}] etc.
-        obs = [gD.gameDB['objectsDB'][o] for o in obs_list]
-        
-        # consolidate obj reference word from allInputRefs global
         o_elems = obj.split("-")
-        obj_ref = gD.allInputRefs[o_elems[0]][int(o_elems[1])] # e.g.['o'][3]
+        obj_ref = gD.allInputRefs[o_elems[0]][int(o_elems[1])] # ALL possible
         
         # get obj desc, loc etc.
         for dc in gD.LOCDATA['locObjects']:
             if obj_ref in gD.gameDB['objectsDB'][dc]['refs']:
+                obj_id = dc # set script global obj_id for refs to gD.gameDB
                 obj_desc = gD.gameDB['objectsDB'][dc]['desc']
                 obj_loc = gD.gameDB['objectsDB'][dc]['location']
-        
-        if via != None and jun != None:
-            # consolidate via and conJunct reference word
-            v_elems = via.split("-")
-            via_ref = inps[v_elems[0]][int(v_elems[1])]
-            j_elems = jun.split("-")
-            jun_ref = inps[j_elems[0]][int(j_elems[1])]
-
-
-        # check if location has any objects (data)
-        if len(obs) > 0:
-            
-            # check the object exists in this location
-            missing_object = True
-            for o in obs:
-                if obj_ref in o['refs']:
-                    #collate available commands for obj
-                    for k, v in o.items():
-                        #match any of "getCmds-OK, putCmds-OK" etc
-                        if 'OK' in k: 
-                            # limit to only the allowed cmds
-                            if len(v) >= 1:
-                                for i in range(len(v)):
-                                    oInfo.append(v[i])
-                            else:
-                                # extract name-string of command list
-                                # and get all cmds in that command list
-                                w = k[:-3] 
-                                a = gD.gameDB['actionCmds'][w]
-                                for i in range(len(a)):
-                                    oInfo.append(a[i])
-
-                    
-                    ### == obj COMMANDS: look at, examine etc. =============
-                    
-                    if cmd_ref == "look at":
-                        
-                        # show object description
-                        printText(o['desc'], 'look at')
-        
-                    elif cmd_ref == "examine":
-                        #add name to oInfo for renderer
-                        oInfo.append(o['name'])
-                        
-                        printText(oInfo, 'examine')
-                        
-                    ### == specific explore COMMANDS: look in / under etc ====   
-                        
-                    elif cmd_ref in ('look') and via != None:
-            
-                        # specific for commands that only have a via (no obj) 
-                        # e.g. look in the box / get in the box / go through the door
-                    
-                        de.bug(3, "We have a VIA UI command!", cmd_ref, jun, via)
-                    
-                        #TODO: Handle "contained_by" cmd, jun, obj
-                        
-                        ### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ###
-                        # Needs to take into account what is "contained_by" 
-                        # the via, or any other similar states to be honest!
-                        #####################################################
-                    
-                    ### == explore COMMANDS: look for, where etc ===========
-                    
-                    elif cmd_ref in ('look for', 'where'):
-                        
-                        # show both obj desc and loc together                        
-                        printText([obj_desc, obj_loc], cmd_ref)
-                        
-                    ### == navigation COMMANDS w/o VIA e.g. 'go in; =========
                 
-                    elif cmd_ref in ('get', 'go', 'walk') and via != None:
+        if obj_id == None:
+            # check in player inventory
+            for sl, its in gD.PLAYERINV.items():
+                for it in its:
+                    if obj_ref in it['refs']:
+                        obj_desc = it['desc']
+                        obj_loc = it['location']
                     
-                        de.bug(3, "We have a VIA movement type of command!", cmd_ref, jun, via)
+                        for ob in gD.gameDB['objectsDB']:
+                            if obj_ref in gD.gameDB['objectsDB'][ob]['refs']:
+                                obj_id = ob # set script global obj_id for refs to gD.gameDB
                     
-                    #TODO: Handle changing location with a cmd, jun, via input
-                    
-                    ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ##
-                    # Needs to handle changing location using the via  
-                    ########################################################
-                            
-                    ### == get, put, use, int COMMANDS =====================
+        de.bug(5, "obj values ref", obj_ref, "id", obj_id, "desc & loc", obj_desc, " ", obj_loc)
+    
+    # Check if LOCATION has any objects
+    # build location's objects as a list of dicts [{},{}] etc.
+    obs = [gD.gameDB['objectsDB'][o] for o in obs_list]
+    
+    if len(obs): # if it does
+        for o in obs:
+            
+            # check the obj exists in this location
+            if obj_ref in o['refs']:
                 
-                    # check legal action for the object
-                    if cmd_ref in oInfo:
-                          
-                        # get command add object to inventory
-                        # check all get aliases
-                        for i in gD.gameDB['actionCmds']['getCmds']:
-                            if cmd_ref == i:
+                missing_object = False # Found a valid obj!
+                this_obj = o # set script global this_obj for other functions
+                
+                de.bug(3, "this_obj is", this_obj)
+                
+                # collate all AVAILABLE COMMANDS for the obj
+                for k, v in this_obj.items():
+                    #match any of "getCmds-OK, putCmds-OK" etc
+                    if 'OK' in k: 
+                        # limit to only the allowed cmds
+                        if len(v) >= 1:
+                            for i in range(len(v)):
+                                obj_cmds.append(v[i])
+                        else:
+                            # extract name-string of command list
+                            # and get all cmds in that command list
+                            w = k[:-3] 
+                            a = gD.gameDB['actionCmds'][w]
+                            for i in range(len(a)):
+                                obj_cmds.append(a[i])
                                 
-                                # remove obj from inv
-                                if tfs.updateInventory(o, "add") != False:
                                 
-                                    # render feedback to player
-                                    renderers.render_objectActions(o, cmd_ref, "get-take")
-                                    
-                                    #TODO: show Player Inventory when new obj acquired
-                                    
-                                    ### INCOMPLETE NEED TO call
-                                    ## PLAYER INV renderer here
-#                                    print(gD.PLAYERINV)
-                                
-                                else:
-                                    
-                                    # trying to add obj ALREADY in inv
-                                    printText(o['name'], 'already in inv')
-                                
-                        # put command remove object from inventory
-                        # check all put aliases
-                        for i in gD.gameDB['actionCmds']['putCmds']:
-                            if cmd_ref == i:
-                                
-                                # remove obj from inv
-                                if tfs.updateInventory(o, "remove") != False:
-                                
-                                    # render feedback to player
-                                    renderers.render_objectActions(o, cmd_ref, "put-leave")
-                                    
-                                    #TODO: Show Inventory on drop object
-                                    
-                                    ### INCOMPLETE NEED TO call
-                                    ## PLAYER INV renderer here
-                                    print(gD.PLAYERINV)
-                                    
-                                else:
-                                    
-                                    # trying to remove obj not in inv
-                                    printText(o['name'], 'not in inv')
+        # User referenced a VALID object WITHOUT putting
+        # an action command - So give them help
+        if cmd_ref == None:
+            renderers.render_objectHelp(obj_cmds, this_obj['name'])
+            return False # exit this function
+    
+    # Check if obj in player inventory and set missing_object = False if found
+    if tfs.getInventorySlot(gD.gameDB['objectsDB'][obj_id]):
+        missing_object = True
+
+        
+    # handle input reference to an object that is not at this loc
+    if missing_object == True and obj_ref != None:
+        de.bug('missing object', obj_ref)
+        printText(obj_ref, 'missing object') 
+        return False # exit this function
+
+     
+    
+    ############## COMMANDS THAT REQUIRE NO OBJECT ################
+    
+    if cmd_ref in gD.gameDB['actionCmds']['exploreCmds'] and via == None:
+        
+        # give user feedback on their command
+        printText(None, cmd_ref)
+        return True # exit this function, we're done here
+    
+    
+    if via != None:
+    
+        ### == specific explore COMMANDS: look in / under etc ====   
+    
+        if cmd_ref in ('look'):
+        
+            de.bug(4, "We have a VIA UI command!", cmd_ref, jun, via)
+            
+            ## check if object permissions prevent action
+            can_look_in = tfs.objPermissions(this_via)
+            de.bug(4, "lock perms are", can_look_in)
+            
+            if can_look_in == "has-req-obj":
+                
+                    # tell player they need to use the req obj
+                    renderers.render_objectActions(this_via, cmd_ref, "has-req-obj")
                     
-                        # use commands do object custom action
-                        if cmd_ref == "use":
-                            
-                            # check used obj is in player inv
-                            if tfs.getInventorySlot(o) != False:
-                            
-                                # no target, singleton "use"
-                                if via != None:
-                                    
-                                    #TODO: The USE command and results of it
-                                    
-                                    ## INCOMPLETE . JUST ALL OF THIS!!
-                                    
-                                    # check object STATE
-                                    objectState(o)
-                                    de.bug("use key on -", via)
-                                    #use key on box
-                                    
-    #                                renderers.render_objectActions(o, cmd, cmd)
-                                    
-                                    #check correct req obj for obj
-                                    
-                                    # do something now the obj is used
-                                    # for example a box display stuff inside
-                                                                
-                                else:
-                                    
-                                    # use key - "use key on what?"
-                                    # render feedback to player
-                                    renderers.render_objectActions(o, cmd_ref, cmd_ref)
-                                    
-                            else:
-                                # trying to use obj not in inv
-                                printText(o['name'], 'not in inv')
-                        
-                        if cmd_ref == "open":
-                            
-                            # check if object permissions prevent action
-                            can_open = tfs.objPermissions(o)
-                            de.bug(3, "lock perms are", can_open)
-                            
-                            if can_open == "ok":
-                                # update object state according to o['state']
-                                objectState(o['state'])
+            elif can_look_in == "ok":
+                
+                # add the contained items to the game world
+                cont_objs = tfs.update_gameObjects(gD.gameDB['objectsDB'][via_id]['state']['contains'], 'add') 
+    
+                # feedback to player what they have discovered
+                printText([cont_objs, this_via['name']], "contained by")
+            
+            else:
+                # player does not have the req object
+                renderers.render_objectActions(this_via, cmd_ref, can_look_in)
+                
+                
+        ### == navigation COMMANDS w/o VIA e.g. 'go in; =========
                                 
-                            elif can_open == "has-req-obj":
-                                # tell player they need to use the req obj
-                                renderers.render_objectActions(o, cmd_ref, "has-req-obj")
-                                
-                            else:
-                                # player does not have the req object
-                                renderers.render_objectActions(o, cmd_ref, can_open)
-                    
-                    
-                    # No command in player input
-                    elif cmd_ref == None:
-                        # User referenced an object WITHOUT putting
-                        # an action command - So give them help
-                        renderers.render_objectHelp(oInfo, o['name'])
-                            
+        elif cmd_ref in ('get', 'go', 'walk'):
                         
-                    elif cmd_ref in gD.gameDB['actionCmds']['exploreCmds']:
+            de.bug(3, "We have a VIA movement type of command!", cmd_ref, jun, via)
+        
+            #TODO: Handle changing location with a cmd, jun, via input
+            
+            ######### NOT COMPLETE NEED RENDER TEXT TO HANDLE THIS ##
+            # Needs to handle changing location using the via  
+            ########################################################                   
+    
+    
+    
+    ############## COMMANDS THAT NEED AN OBJECT ################
+    
+    if obj != None:
+                    
+        ### == obj COMMANDS: look at, examine etc. =============
+        
+        if cmd_ref == "look at":
+            
+            # show object description
+            printText(this_obj['desc'], 'look at')
+    
+        elif cmd_ref == "examine":
+            # bit of a hack this... add obj name to end of obj_cmds
+            # for renderer to .pop() off afterwards
+            obj_cmds.append(this_obj['name'])
+            
+            printText(obj_cmds, 'examine')
+            
+
+        ### == explore COMMANDS: look for, where etc ===========
+        
+        elif cmd_ref in ('look for', 'where'):
+            
+            # show both obj desc and loc together                        
+            printText([obj_desc, obj_loc], cmd_ref)
+            
+
+        ### == get, put, use, int COMMANDS =====================
+    
+        # check legal action for the object
+        if cmd_ref in obj_cmds:
+              
+            ### == get command add object to inventory ============
+            
+            # check all get aliases
+            for i in gD.gameDB['actionCmds']['getCmds']:
+                if cmd_ref == i:
+                    
+                    de.bug(4, "this_obj", this_obj)
+                    
+                    # add obj to inv & update_worldState
+                    if tfs.updateInventory(obj_id, "add") != False:
+                    
+                        # render feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, "get-take")
                         
-                        # ignore these explore commands
-                        de.bug(2, "this command is ok")
+                        # render the player inventory
+                        renderers.render_charInventory()
+                        
+                        # remove the object from the world local objects
+                        update_worldState({'object' : [obj_id]}, this_obj, cmd_ref)
+                    
+                    else:
+                        
+                        # trying to add obj ALREADY in inv
+                        printText(this_obj['name'], 'already in inv')
+                    
+            
+            ### == put command remove object from inventory =========
+            
+            # check all put aliases
+            for i in gD.gameDB['actionCmds']['putCmds']:
+                if cmd_ref == i:
+                    
+                    # remove obj from inv
+                    if tfs.updateInventory(this_obj, "remove") != False:
+                    
+                        # render feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, "put-leave")
+                        
+                        # render the player inventory
+                        renderers.render_charInventory()
+                        
+                        
+                        #TODO: Need to make "drop" remove correctly from worldState
+                        
+                        # add the object into the world local objects
+                        update_worldState({'object' : [obj_id]}, this_obj, cmd_ref)
                         
                     else:
                         
-                        # must be an illegal command for this object
-                        # feedback 'you can't do that to this object'
-                        t = "illegal"
-                        renderers.render_objectActions(o, cmd_ref, t)    
-                        
-                    # exit this loop, as we have actioned our player input
-                    missing_object = False
-                    break
-                    
-            # handle input reference to an object that is not at this loc
-            if missing_object == True:
-                de.bug('missing object')
-                printText(obj_ref, 'missing object')
-    
-        else:
-            # no objects at all at this loc
-            de.bug('no objects')
-            printText(obj_ref, 'missing object')
+                        # trying to remove obj not in inv
+                        printText(this_obj['name'], 'not in inv')
+        
             
-    else:
-        # if singleton, show correct actionCmd feedback help
-        renderers.render_actionHelp(cmd_ref)
+            ### == use command do object custom action =============
+            
+            if cmd_ref == "use":
+                
+                # check used obj is in player inv
+                if tfs.getInventorySlot(this_obj) != False:
+                
+                    # no target, singleton "use"
+                    if via != None:
+                        
+                        #TODO: The USE command and results of it
+                        
+                        ## INCOMPLETE . JUST ALL OF THIS!!
+                        
+                        # check object STATE
+                        update_objectState(obj_id, this_obj, cmd_ref)
+                        de.bug("use key on -", via)
+                        #use key on box
+                        
+                        # renderers.render_objectActions(o, cmd, cmd)
+                        
+                        # check correct req obj for obj
+                        
+                        # do something now the obj is used
+                        # for example a box display stuff inside
+                                                    
+                    else:
+                        
+                        # use key - "use key on what?"
+                        # render feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, cmd_ref)
+                        
+                else:
+                    # trying to use obj not in inv
+                    printText(this_obj['name'], 'not in inv')
+            
+            ### == open command do object custom action =============
+            
+            if cmd_ref == "open":
+                
+                # check if object permissions prevent action
+                can_open = tfs.objPermissions(this_obj)
+                de.bug(4, "lock perms are", can_open)
+                
+                #TODO: Ensure the player has the via object in their inventory?
+                
+                if can_open == "has-req-obj":
+                    
+                    de.bug(4, "via_ref", via_ref)
+                    
+                    # ensure the player has typed "with the via_ref" 
+                    if via_ref in gD.gameDB['objectsDB'][this_obj['permissions']['locked_by']]['refs']:
+                    
+                        # update object state
+                        update_objectState(obj_id, this_obj, cmd_ref)
+                    
+                    else:
+    
+                        # tell player they need to use the req obj
+                        renderers.render_objectActions(this_obj, cmd_ref, "has-req-obj")
+                
+                elif can_open == "ok": # obj not locked
+                    
+                    # update object state
+                    update_objectState(obj_id, this_obj, cmd_ref)
+                    
+                else:
+                    # player does not have the req object
+                    renderers.render_objectActions(this_obj, cmd_ref, can_open)
+    
+            
+        
+        elif cmd_ref in gD.gameDB['actionCmds']['examineCmds']:
+            
+            #TODO: make these examine commands work again
+            
+            de.bug(2, "this is an examine command, show detail of object")
+        
+        else:
+            
+            # must be an illegal command for this object
+            # feedback 'you can't do that to this object'
+            t = "illegal"
+            renderers.render_objectActions(this_obj, cmd_ref, t)    
+                        
+
+
+    # IF ALL ELSE FAILS cmd is a singleton, show correct actionHelp feedback 
+    if cmd != None and obj == None and via == None:
+        renderers.render_actionHelp(cmd_ref) 
+
+
+
+                
+def update_worldState(o_id, o, cmd_ref): # get, drop etc. updates world state
+    
+    de.bug(5, "current world state is", gD.LOCDATA)
+
+    if cmd_ref in gD.gameDB['actionCmds']['getCmds']:
+        
+        tfs.update_gameObjects(o_id, 'remove')
+        
+    elif cmd_ref in gD.gameDB['actionCmds']['putCmds']:
+        
+        tfs.update_gameObjects(o_id, 'add')
     
     
     
-def objectState(o): # what happens after the useObject action is successful?
     
-    test_o = tfs.namestr(o, globals())
-    print(gD.World_frame.loc[test_o])
     
-    # if o != None
-    if len(o) > 0:
-        for t in o:
-            if t == 'access_to':
-                for tt in t:
-                    if tt == 'move':
+def update_objectState(obj_id, o, cmd_ref): # what happens after the useObject action is successful?
+    
+#    test_o = tfs.namestr(o, globals())
+#    print(gD.World_frame.loc[test_o])
+    
+    # reset values
+    o_s = o['state']
+    
+    if len(o_s):
+        for s, t in o_s.items():
+            
+            if s == 'access_to':
+                for ss, tt in t.items():
+                    if ss == 'move':
+                        # message user You have unlocked the obj
+                        # what is our loc_id?
+                        de.bug(4, "Our loc id is", gD.LOCDATA)
                         # add the new move to the legal moves for the location
                         # render a message to the player about this
                         de.bug("new route available")
-                    elif tt == 'object':
+                    elif ss == 'object':
                         # add the new object to the objects in the location
                         # render a message to the player about this
                         de.bug("new object visible")
-    
-
-
-
+            
+            elif s == 'contains':
+                
+                if cmd_ref == 'open':
+                    
+                    # remove the 'locked' state
+                    if 'locked_by' in o['permissions']:
+                        del gD.gameDB['objectsDB'][obj_id]['permissions']['locked_by']
+                    
+                    # add the contained items to the game world
+                    #send t  --  {'object' : [..,..]} dict
+                    cont_objs = tfs.update_gameObjects(t, 'add') 
+                    
+                    # feedback to player changed object state
+                    printText(o['name'], '->open')
+                    
+                    # feedback to player the objects they have discovered
+                    printText([cont_objs, o['name']], "contained by")
           
 
         

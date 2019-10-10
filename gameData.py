@@ -14,6 +14,7 @@ import numpy as np
 
 def init():
     global allInputRefs
+    global CURRENT_LOC
     global LOCDATA
     global PLAYERINV
     PLAYERINV = player_inventory
@@ -109,8 +110,11 @@ gameDB = {
 # navigation commands for moving around the spaces
 'navCmds' : ['go', 'walk', 'run', 'leave'],
 
-# exploration commands that reveal information about an object
-'exploreCmds' : ['look at', 'examine', 'search', 'look', 'look for', 'where', 'search for', 'find'],
+# exploration commands that reveal information about a whole location (no obj)
+'exploreCmds' : ['search', 'look'],
+
+# commands that reveal detailed iformation about an object (req obj)
+'examineCmds' : ['look at', 'examine', 'look for', 'where', 'search for', 'find'],
 
 # get commands add an object to the player's hands
 'getCmds' : ['get', 'take', 'pick up'],
@@ -191,7 +195,7 @@ gameDB = {
 
 ## location is an optional additional description of the place the object can be found
 ## NOTE: objects could have an "orthogonal location", or be associated with a "point of interest", such as "north", or "the old tree". Then you could "search around the old tree". And you could build locations out of the component p.o.i that comprise it i.e. the exits and the poi's in it. But this is complex.
-## state describes conditions like 'locked_by' or 'contained_by'. Child objects always have the state i.e. boxes do not 'contain', children are 'contained_by' so that objects can be declared in the right order top to bottom in this py file
+## state describes conditions like 'locked_by' or 'contains'. If there is a one-to-many relationship, put the state on the "one" for look-up ease
 ## inventory slots are the legal player inventory slots for the object. No inv slots means the player cannot store this item in their inventory
 ## Object Permissions
 # 'permissions' can be: 'locked_by' etc req different actions to get access to the object. See controllers.objPermissions()
@@ -221,7 +225,7 @@ gameDB = {
     'desc': 'A large, heavy, metal lock box', 
     'location': 'under a tree', 
     'permissions': {'locked_by': 'ob0001'}, 
-    'state': {}, 
+    'state': {'contains': {'object': ['ob0006','ob0003']}}, 
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
@@ -235,7 +239,7 @@ gameDB = {
     'desc': 'A rusted old iron key covered in flaking yellow paint', 
     'location': 'just sitting there', 
     'permissions': {}, 
-    'state': {'contained_by': {'object': 'ob0002'}}, 
+    'state': {}, 
     'inventory-slot': 'utils', 
     'getCmds-OK': [],
     'putCmds-OK': [], 
@@ -277,7 +281,7 @@ gameDB = {
     'desc': 'A vicious, sharp, pointy dagger', 
     'location': 'glinting on the floor', 
     'permissions': {}, 
-    'state': {'contained_by': {'object': 'ob0002'}}, 
+    'state': {}, 
     'inventory-slot': 'weapons', 
     'getCmds-OK': [],
     'putCmds-OK': [],

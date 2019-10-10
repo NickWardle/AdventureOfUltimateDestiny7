@@ -17,4 +17,4 @@ def bug(grp=None, *b): # * here is to allow for an unspecified number of args
                 print(*b) 
         
         else:
-            print(*b) # print all debug messages that do not have groups
+            print(grp, *b) # print all debug messages that do not have groups

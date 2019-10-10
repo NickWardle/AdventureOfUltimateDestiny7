@@ -12,11 +12,11 @@ debug = True
 
 # Hide specific groups of debug messages, add group number to the list
 group_hide = []
-#group_hide = [1, 2]
+#group_hide = [1, 2, 3]
 
 
 
-# == SETTINGS & TEXT STRINGS FOR THE GAME =====================================
+# == SETTINGS & TEXT STRINGS FOR THE GAME ===================================
 
 # == Input text prefixes
 
@@ -42,3 +42,13 @@ winningMessage = "\n\nCONGRATULATIONS!!! YOU WIN!!!\n\n"
 # == Invalid input feedback text
 
 illegalMove = ["What the hell do you think you're doing?!", "No. Just, no.", "Try again, dumbass...", "That's clearly not right.", "Do you even know what we are trying to do here..?!", "Ok.. Ok.. Look, I'll use small words to explain..", "Oh yeah! Great. Why don't you just roll your face across the keyboard as well..?!"]
+
+
+# == BOX & LAYOUT ELEMENTS ===============================================
+
+slot_shim = '          '
+vertDiv = ' || '
+rowDiv = '======================================================'
+
+inventoryTitle = '\n====================  INVENTORY  ====================='
+characterTitle = '\n====================  CHARACTER  ====================='

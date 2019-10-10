@@ -26,16 +26,18 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'exit': #exit command
         print(ss.inputFeedbackPre, ss.exitMessage)
         
+    elif t == '->open': # now open
+        print(ss.inputFeedbackPre, "The", d.lower(), "is now open")
+        
     elif t == 'cheat': #cheat command
         
         temp = 'this is t {}'.format(t)
         de.bug(temp)
         # show all available movement commands for this location
         print(ss.inputFeedbackPre, "Available moves are", end=": ")
-        tmp = []
-        for i in d:
-            for j in i:
-                tmp.append(j)
+        
+        # unpack commands from nested dicts{}
+        tmp = [j for i in d for j in i]
         
         # list the commands
         print(tfs.listify(tmp))
@@ -47,16 +49,15 @@ def render_Text(d, t="default"): #generic text renderer
 
     elif t == 'help': #help command
         
-        genCmds = d[0]
+        # split d - data payload in params
+        genCmds = d[0] 
         objCmds = d[1]
+        
         # show all GENERAL commands for the game
         print(ss.inputFeedbackPre, "General commands", end=": ") # end= prevents new line
         
-        # retrieve dictionary values with x, y and .items()
-        tmp = []
-        for i, k in genCmds.items():
-            for j in k:
-                tmp.append(j)
+        # unpack commands from nested dicts{}                
+        tmp = [j for i, k in genCmds.items() for j in k]
         
         # list the GENERAL commands
         print(tfs.listify(tmp))
@@ -70,17 +71,17 @@ def render_Text(d, t="default"): #generic text renderer
         # list the OBJECT commands
         print(tfs.listify(tmp))
 
-    elif t == 'search': #search command
+    elif t in ('look', 'search'): #search command
         
         # show all objects in the location
         print(ss.inputFeedbackPre, "You find the following", end=": ")
         
-        oRefs= []
-        for i in d:
-            oRefs.append(i['name'])
+        oRefs= [gD.gameDB['objectsDB'][i]['name'] for i in gD.LOCDATA['locObjects']]
+#        for i in d:
+#            oRefs.append(gD.gameDB['objectsDB'][i]['name'])
         
         # list the object refs
-        print(tfs.listify(oRefs))
+        print(tfs.listify(oRefs, True))
         
         # show all monsters in the location!
         
@@ -91,7 +92,7 @@ def render_Text(d, t="default"): #generic text renderer
         print(ss.inputFeedbackPre, "You see", d[0].lower(), d[1].lower())
 
     elif t == 'missing object': # part of controllers.useObject()
-        print(ss.inputFeedbackPre, "There is no", d.lower(), "here")
+        print(ss.inputFeedbackPre, "You can't see the", d.lower(), "here")
         
     elif t == 'look at': # part of controllers.useObject()
         print(ss.inputFeedbackPre, "You see", d.lower())
@@ -102,15 +103,17 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'already in inv': # trying to add an obj already in the inv
         print(ss.inputFeedbackPre, "You already have the", d.lower(), "in your inventory")
         
+    elif t == 'contained by':
+        print(ss.inputFeedbackPre, "You see", tfs.listify(d[0], True), "in the", d[1].lower()) 
+        
     elif t == 'examine': # part of controllers.useObject()
         
-        # grab object name
-        oword = d[len(d)-1].lower()
-        d.pop() # remove the last item - the object name
+        # grab object name & remove from list
+        oword = d.pop()
         
         print(ss.inputFeedbackPre, "You can", end=" ") # end= prevents new line
         # list out the available commands
-        print(tfs.listify(d, "or"), "the", oword)
+        print(tfs.listify(d, False, "or"), "the", oword)
         
     elif t == 'default': # just render payload
         print(d)
@@ -139,7 +142,7 @@ def render_objectActions(d, cmd, t):
         print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
         
     elif t == "has-req-obj": # tell player to use the req obj
-        print(ss.inputFeedbackPre, "Use the", gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower(), "to", cmd, "the", d['name'].lower())
+        print(ss.inputFeedbackPre, "The", d['name'].lower(), "is locked by the", gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower(), "...", "Open it with the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
         
     elif t == "illegal": # user tried to do an illegal action on an object
         print(ss.inputFeedbackPre, "You can\'t", cmd, "the", d['name'].lower())
@@ -193,8 +196,54 @@ def render_locScreen(d): #generic location renderer
 
 
 
+def render_charInventory(): # render player inventory
+    
+    # reset vars
+    invEmpty = True
+    
+    print(ss.inventoryTitle, '\n')
+    
+    for item_slot, slot_items in gD.player_inventory.items():
+        
+        # pad item_slot to 10 chars
+        pad = len(item_slot) + (10 - len(item_slot))
+        item_slot = item_slot.ljust(pad)
+        
+        if len(slot_items):
+            
+            invEmpty = False
+            
+            for item in slot_items:
+                
+                # a or an?
+                if item['name'][0].lower() in ('a', 'e', 'i', 'o', 'u', 'h'):
+                    ind_pron = 'An'
+                else:
+                    ind_pron = 'A'
+                
+                if slot_items.index(item) == 0:
+                    print(item_slot, ss.vertDiv, ind_pron, item['name'].lower(), '\n')
+                else:
+                    print(ss.slot_shim, ss.vertDiv, ind_pron, item['name'].lower(), '\n')
+                    
+            print(ss.rowDiv, '\n')
+            
+        else:
+            
+            if invEmpty == False:
+            
+                print(item_slot, ss.vertDiv, '(No items) \n')
+                print(ss.rowDiv, '\n')
+    
+    
+    if invEmpty == True:
+        print("\n          You have nothing in your Inventory \n\n")
+        print(ss.rowDiv, '\n')
+    
+    
+
 # def render_charHome
         
 # def render_charSheet
         
-# def render_charInventory
+
