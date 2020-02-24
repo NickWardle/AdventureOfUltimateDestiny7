@@ -124,7 +124,7 @@ gameDB = {
 
 # interaction commands change the state of an object
 # some objects need to be in the players hands first
-'intCmds' : ['open', 'close', 'move', 'pick'],
+'intCmds' : ['open', 'close', 'move', 'pick', 'lock', 'unlock'],
 
 # use commands consume one use of an object
 # some objects have infinite uses
@@ -225,11 +225,11 @@ gameDB = {
     'desc': 'A large, heavy, metal lock box', 
     'location': 'under a tree', 
     'permissions': {'locked_by': 'ob0001'}, 
-    'state': {'contains': {'object': ['ob0006','ob0003']}}, 
+    'state': {'access': 'locked', 'contains': ['ob0006','ob0003']}, 
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-    'intCmds-OK': [], 
+    'intCmds-OK': []
 #    'useCmds-OK': []
 }
 ,
@@ -239,7 +239,7 @@ gameDB = {
     'desc': 'A rusted old iron key covered in flaking yellow paint', 
     'location': 'just sitting there', 
     'permissions': {}, 
-    'state': {}, 
+    'state': {'contained_by': ['ob0002']}, 
     'inventory-slot': 'utils', 
     'getCmds-OK': [],
     'putCmds-OK': [], 
@@ -253,11 +253,11 @@ gameDB = {
     'desc': 'An old dirty yellow door', 
     'location': 'covered in vines and roots', 
     'permissions': {'locked_by': 'ob0006'}, 
-    'state': {'access_to': {'move': 'm010003'}}, 
+    'state': {'access': 'locked', 'contains': ['m010003']}, 
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-    'intCmds-OK': ['open', 'close'],
+    'intCmds-OK': ['open', 'close']
 #    'useCmds-OK': []
 }
 ,
@@ -267,11 +267,11 @@ gameDB = {
     'desc': 'A freshly painted red door', 
     'location': 'in the middle of a wall', 
     'permissions': {'locked_by': 'ob0001'}, 
-    'state': {'access_to': {'move': 'm010003'}}, 
+    'state': {'access': 'locked', 'contains': ['m010003']}, 
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-    'intCmds-OK': ['open', 'close'],
+    'intCmds-OK': ['open', 'close']
 #    'useCmds-OK': []
 }
 ,
@@ -281,7 +281,7 @@ gameDB = {
     'desc': 'A vicious, sharp, pointy dagger', 
     'location': 'glinting on the floor', 
     'permissions': {}, 
-    'state': {}, 
+    'state': {'contained_by': ['ob0002']}, 
     'inventory-slot': 'weapons', 
     'getCmds-OK': [],
     'putCmds-OK': [],

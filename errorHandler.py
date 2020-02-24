@@ -19,7 +19,17 @@ def inputError(loc=0): #optional location param
     # show generic "try again" message
     renderers.render_inputError()
     
-    
+
+
+#def codingError(f, d):
+#    
+#    # use to show specific responses to known/likely code/function mistakes
+#    if f == 'update_worldState':
+#        if type(d) != dict:
+#            print(ss.errorPre, f, "expects a dict as first arg")
+#            
+#            return False
+
 
 def throwError(s, dd):
     de.bug("we are in throwError() with this data: ", dd)

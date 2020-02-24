@@ -117,6 +117,9 @@ while WIN == False:
     
     # deal with returned information: perform actions, display feedback
     cmd_result = controllers.doCommand(myCmd, myObj, conJunct, myVia, legalInputs, uiData)
+    
+    # report current World State after last input has been actioned    
+    de.bug(5, "current world state is", gD.LOCDATA)
             
     # EXITING game?
     if gD.EXIT == True:

@@ -11,8 +11,8 @@ debug = True
 #debug = False
 
 # Hide specific groups of debug messages, add group number to the list
-group_hide = []
-#group_hide = [1, 2, 3]
+#group_hide = []
+group_hide = [1,2,3]
 
 
 

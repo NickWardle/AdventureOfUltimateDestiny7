@@ -29,6 +29,9 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == '->open': # now open
         print(ss.inputFeedbackPre, "The", d.lower(), "is now open")
         
+    elif t == '->close': # now open
+        print(ss.inputFeedbackPre, "The", d.lower(), "is now closed")
+        
     elif t == 'cheat': #cheat command
         
         temp = 'this is t {}'.format(t)
@@ -106,6 +109,9 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'contained by':
         print(ss.inputFeedbackPre, "You see", tfs.listify(d[0], True), "in the", d[1].lower()) 
         
+    elif t == 'container empty':
+        print(ss.inputFeedbackPre, "The", d.lower(), "is empty!") 
+
     elif t == 'examine': # part of controllers.useObject()
         
         # grab object name & remove from list
@@ -142,7 +148,13 @@ def render_objectActions(d, cmd, t):
         print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
         
     elif t == "has-req-obj": # tell player to use the req obj
-        print(ss.inputFeedbackPre, "The", d['name'].lower(), "is locked by the", gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower(), "...", "Open it with the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
+        print(ss.inputFeedbackPre, "You need to", cmd, "the", d['name'].lower(), "with the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
+
+
+#################################### GOT TO HERE ##########
+# need to be able to call ['locked_by'] and also ['unlocked_by'] on 151
+
+
         
     elif t == "illegal": # user tried to do an illegal action on an object
         print(ss.inputFeedbackPre, "You can\'t", cmd, "the", d['name'].lower())
@@ -173,6 +185,10 @@ def render_objectHelp(d, n):
     # list out the available commands
     print(tfs.listify(d))
     
+def render_objectDedupe(d, inp):
+    
+    print(ss.inputFeedbackPre, "Which", inp, "do you mean:", tfs.listify(d, False, 'or'), "?")
+
 
 # == VIEWS =================================================
 # screen renderers get their data from other modules
