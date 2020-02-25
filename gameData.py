@@ -113,8 +113,11 @@ gameDB = {
 # exploration commands that reveal information about a whole location (no obj)
 'exploreCmds' : ['search', 'look'],
 
-# commands that reveal detailed iformation about an object (req obj)
-'examineCmds' : ['look at', 'examine', 'look for', 'where', 'search for', 'find'],
+# commands that reveal detailed information about an object (req obj)
+'examineCmds' : ['look at', 'examine', 'inspect'],
+
+# commands that reveal locational information about an object (req obj)
+'searchCmds' : ['look for', 'where', 'search for', 'find'],
 
 # get commands add an object to the player's hands
 'getCmds' : ['get', 'take', 'pick up'],

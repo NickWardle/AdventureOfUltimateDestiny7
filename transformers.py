@@ -51,7 +51,7 @@ def getObjectState(d, s=None):
     
     if s:
         
-        if d['state'][s]:
+        if s in d['state']:
         
             return d['state'][s]
         
@@ -73,34 +73,36 @@ def objPermissions(d): # access control to certain objects
     # check the state of the object (locked etc)
     ob_access = d['state']['access']
     
-    if ob_access: # if the object has an access parameter
-        if ob_access == 'locked':
+    # get object permissions
+    req_obj = d['permissions']
     
-            for t, o in d['permissions'].items():
-                
-                o_name = gD.gameDB['objectsDB'][o]['name'] # just a reference to match on
-                
-                if t == "locked_by":
-                    
-                    de.bug(3, "checking lock perms")
-                    # check if player has required object in their inventory
-                    for cat, objs in gD.PLAYERINV.items():
-                        for ob in objs:
-                            if o_name == ob['name']: # this currently works for 'utils' data format
-                                perm_ok = True            
-                    
-            if perm_ok == True:
-                # player has the req obj
-                return "has-req-obj"
-            else:
-                # player does NOT have req obj, just return state
-                return t
-            
+    if ob_access: # if the object has an access parameter
+        
+        if ob_access == 'locked':
+            perm_type = "locked_by"
         elif ob_access == 'unlocked':
+            perm_type = "unlocked_by"
+        
+        if perm_type in req_obj:
+                
+            o_name = gD.gameDB['objectsDB'][req_obj[perm_type]]['name'] # just a reference to match on
             
-            return ob_access
+            de.bug(5, "checking player inventory for", o_name)
+            # check if player has required object in their inventory
+            for cat, objs in gD.PLAYERINV.items():
+                for ob in objs:
+                    if o_name == ob['name']: # this currently works for 'utils' data format
+                        perm_ok = True   
+        
+        if perm_ok == True:
+            # player has the req obj
+            return "has-req-obj"
+        else:
+            # player does NOT have req obj, just return state
+            return perm_type
+    
     else:
-     # no restrictions so return "ok" (not True, or it overrides every other condition check!)
+        # no restrictions so return "ok" (not True, or it overrides every other condition check!)
         return "ok"
 
 
@@ -123,13 +125,11 @@ def getInventorySlot(d): # check if an item is in the inventory (and get slot)
         if any (k in d for k in ('getCmds-OK', 'putCmds-OK', 'useCmds-OK')):
             de.bug(5, "ERROR, missing inventory slot on ", d, "in gameData file")
         else:
-            de.bug(5, "this object ", d, "cannot exist in the inventory")
+            de.bug(5, "this object ", d['name'], "cannot exist in the inventory")
             return False
     
 
 def updateInventory(d, t):
-    
-    #TODO: Need to add the whole object including id to the inv, so change other calls to this too
     
     # NOTE: d must be a COMPLETE object, not just an obj_id
     

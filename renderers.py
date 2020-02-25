@@ -26,11 +26,11 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'exit': #exit command
         print(ss.inputFeedbackPre, ss.exitMessage)
         
-    elif t == '->open': # now open
-        print(ss.inputFeedbackPre, "The", d.lower(), "is now open")
+#    elif t == 'unlocked': # now open
+#        print(ss.inputFeedbackPre, "The", d.lower(), "is now", t)
         
-    elif t == '->close': # now open
-        print(ss.inputFeedbackPre, "The", d.lower(), "is now closed")
+    elif t == 'already locked': # now open
+        print(ss.inputFeedbackPre, "The", d.lower(), "is", t)
         
     elif t == 'cheat': #cheat command
         
@@ -97,8 +97,11 @@ def render_Text(d, t="default"): #generic text renderer
     elif t == 'missing object': # part of controllers.useObject()
         print(ss.inputFeedbackPre, "You can't see the", d.lower(), "here")
         
-    elif t == 'look at': # part of controllers.useObject()
-        print(ss.inputFeedbackPre, "You see", d.lower())
+    elif t == 'look at': # d is a list but [1] can be False is d has no access restrictions i.e. "locked"
+        if (len(d) > 1) and (d[1] != False):
+            print(ss.inputFeedbackPre, "You see", d[0].lower(), ". It is", d[1].lower())
+        else:
+            print(ss.inputFeedbackPre, "You see", d[0].lower())
                 
     elif t == 'not in inv': # player trying to drop an obj not in their inv
         print(ss.inputFeedbackPre, "You do not have the", d.lower(), "in your inventory")
@@ -119,7 +122,7 @@ def render_Text(d, t="default"): #generic text renderer
         
         print(ss.inputFeedbackPre, "You can", end=" ") # end= prevents new line
         # list out the available commands
-        print(tfs.listify(d, False, "or"), "the", oword)
+        print(tfs.listify(d, False, "or"), "the", oword.lower())
         
     elif t == 'default': # just render payload
         print(d)
@@ -134,28 +137,25 @@ def render_prompt(d, t):
         return ss.inputQuestionPre + "I didnt understand '" + d[0].lower() + "' Did you mean '" + d[1].lower() + "'? Y/N\n" + ss.shortLnNewLine + '\n'
 
 
-def render_objectActions(d, cmd, t):
+def render_objectActions(d, cmd, t, ob=None):
     
     de.bug(3, "data for interaction is", d)
     
-    if t == "get-take" or t == "put-leave" or t == "open-OK":
+    if t in ("get-take", "put-leave", "ok", "unlocked"):
         print(ss.inputFeedbackPre, "You", cmd, "the", d['name'].lower())
+
+    elif t == "has-req-obj":
+        print(ss.inputFeedbackPre, "You", cmd, "the", d['name'].lower(), "with the",  gD.gameDB['objectsDB'][ob]['name'].lower())
         
     elif t == "use": # singleton "use" command: use on what?
         print(ss.inputFeedbackPre, "Use the", d['name'].lower(), "to do what?")
         
     elif t == "locked_by": # tell player what req obj is
-        print(ss.inputFeedbackPre, "This", d['name'].lower(), "is locked by the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
+        print(ss.inputFeedbackPre, "The", d['name'].lower(), "is locked by the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
         
-    elif t == "has-req-obj": # tell player to use the req obj
-        print(ss.inputFeedbackPre, "You need to", cmd, "the", d['name'].lower(), "with the",  gD.gameDB['objectsDB'][d['permissions']['locked_by']]['name'].lower())
+    elif t == "unlocked_by": # tell player what req obj is
+        print(ss.inputFeedbackPre, "The", d['name'].lower(), "can be locked using the",  gD.gameDB['objectsDB'][d['permissions']['unlocked_by']]['name'].lower())
 
-
-#################################### GOT TO HERE ##########
-# need to be able to call ['locked_by'] and also ['unlocked_by'] on 151
-
-
-        
     elif t == "illegal": # user tried to do an illegal action on an object
         print(ss.inputFeedbackPre, "You can\'t", cmd, "the", d['name'].lower())
 
