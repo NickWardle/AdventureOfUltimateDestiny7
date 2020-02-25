@@ -7,6 +7,8 @@ import debugger as de
 import gameData as gD
 import settings as ss
 import controllers
+import input_parsing as parseInp
+import command_handling as doCmd
 import errorHandler
 
 
@@ -108,15 +110,15 @@ while WIN == False:
     # == PARSE AND HANDLE PLAYER INPUT == ########################
     
     # tokenise the input
-    inputTokenized = controllers.tokenizeInput(myInput)
+    inputTokenized = parseInp.tokenizeInput(myInput)
     de.bug(1, "inputs tokens", inputTokenized)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, conJunct, myVia = controllers.parseInput(inputTokenized, legalInputs)
+    myCmd, myObj, conJunct, myVia = parseInp.parseInput(inputTokenized, legalInputs)
     de.bug(1, "returned to gameExec with these:", myCmd, myObj, conJunct, myVia)
     
     # deal with returned information: perform actions, display feedback
-    cmd_result = controllers.doCommand(myCmd, myObj, conJunct, myVia, legalInputs, uiData)
+    cmd_result = doCmd.doCommand(myCmd, myObj, conJunct, myVia, legalInputs, uiData)
     
     # report current World State after last input has been actioned    
 #    de.bug(5, "current world state is", gD.LOCDATA)
