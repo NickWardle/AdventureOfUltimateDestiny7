@@ -145,42 +145,65 @@ gameDB = {
 # == ALL MOVES ============================================================
 'moveCommandsDB' : {
 
-'m010001' : [ 
-    [
-        ["n", "north"], 
-        "You take the path to the North", 
-        'z0002'
-    ],
-    [
-        ["e", "east"], 
-        "You walk east into the dark forest", 
-        'z0004'
-    ]
-]
+'m010001' : { 
+
+'d010001' : {
+         'cmds' : ["n", "north"], 
+         'moveDesc' : "an exit to the North",
+         'moveLoc' : "through the dark trees",
+         'goDesc' : "You walk the North into the Dark Forest", 
+         'destId' : 'z0002'
+    }
+    ,
+
+'d010002' : { 
+         'cmds' : ["e", "east"],
+         'moveDesc' : "one to the East",
+         'moveLoc' : "along a well worn path",
+         'goDesc' : "You take the old path to the East", 
+         'destId' : 'z0004'
+    }
+
+}
 ,
-'m010002' : [ 
-    [
-        ["s", "south"], 
-        "You take the path to the South", 
-        'z0001'
-    ]
-]
+
+'m010002' : { 
+
+'d020001' : {
+        'cmds' : ["s", "south"],
+        'moveDesc' : "an exit to the South",
+        'moveLoc' : "out of the forest",
+        'goDesc' : "You take the path to the South", 
+        'destId' : 'z0001'
+    }
+
+}
 ,  
-'m010003' : [ 
-    [
-        ["inside", "into"], 
-        "You step into the dark doorway", 
-        'z0003'
-    ]
-]
+
+'m010003' : { 
+
+'d030001' : {
+        'cmds' : ["inside", "into"],
+        'moveDesc' : "a hidden entrance way",
+        'moveLoc' : "amongst the rocks",
+        'goDesc' : "You step into the dark entrance", 
+        'destId' : 'z0003'
+    }
+
+}
 ,
-'m010004' : [ 
-    [
-        ["outside"], 
-        "You step back out into the sunlight", 
-        'z0001'
-    ]
-]  
+
+'m010004' : { 
+
+'d040001' : {
+        'cmds' : ["outside"],
+        'moveDesc' : "an way out of the cave",
+        'moveLoc' : "outside into the light",
+        'goDesc' : "You step back out into the sunlight", 
+        'destId' : 'z0001'
+    }
+
+}
  
     
 }
@@ -211,7 +234,7 @@ gameDB = {
 'ob0001' : {
     'refs': ['key', 'red key'],
     'name': 'Red key',
-    'desc': 'A particularly ornate, shiny, red, metal key', 
+    'desc': 'a particularly ornate, shiny, red, metal key', 
     'location': 'partially hidden under a bush', 
     'permissions': {}, 
     'state': {}, 
@@ -225,7 +248,7 @@ gameDB = {
 'ob0002' : {
     'refs': ['box', 'big box', 'metal box', 'heavy box'],
     'name': 'Big box',
-    'desc': 'A large, heavy, metal lock box', 
+    'desc': 'a large, heavy, metal lock box', 
     'location': 'under a tree', 
     'permissions': {'locked_by': 'ob0001'}, 
     'state': {'access': 'locked', 'contains': ['ob0006','ob0003']}, 
@@ -239,7 +262,7 @@ gameDB = {
 'ob0006' : {
     'refs': ['key', 'yellow key'],
     'name': 'Yellow key',
-    'desc': 'A rusted old iron key covered in flaking yellow paint', 
+    'desc': 'a rusted old iron key covered in flaking yellow paint', 
     'location': 'just sitting there', 
     'permissions': {}, 
     'state': {'contained_by': ['ob0002']}, 
@@ -253,7 +276,7 @@ gameDB = {
 'ob0005' : {
     'refs': ['door', 'yellow door'],
     'name': 'Yellow door',
-    'desc': 'An old dirty yellow door', 
+    'desc': 'an old dirty yellow door', 
     'location': 'covered in vines and roots', 
     'permissions': {'locked_by': 'ob0006'}, 
     'state': {'access': 'locked', 'contains': ['m010003']}, 
@@ -267,7 +290,7 @@ gameDB = {
 'ob0004' : {
     'refs': ['door', 'red door'],
     'name': 'Red door',
-    'desc': 'A freshly painted red door', 
+    'desc': 'a freshly painted red door', 
     'location': 'in the middle of a wall', 
     'permissions': {'locked_by': 'ob0001'}, 
     'state': {'access': 'locked', 'contains': ['m010003']}, 
@@ -372,21 +395,22 @@ locDB = {
 
 'z0001' : {
     'locInputDesc': 'What will you do next?', 
-    'locDesc': 'You are standing in a clearing. There is an exit to the NORTH through the dark trees. Another to the EAST along a well worn path. And a BOX at the edge of the clearing.', 
+    'locDesc': 'You are standing in a clearing', 
     'locAdditionalDesc': '', 
-    'entryConditions': ['e010001', 'e020001'], 
-    'leaveConditions': ['l010001', 'l020001'], 
-    'moveCmds': 'm010001', 
-    'locObjects': ['ob0001', 'ob0002']
+    'entryConditions': [], 
+    'leaveConditions': [], 
+    'moveCmds': ['m010001'],
+    'locObjects': ['ob0001', 'ob0002','ob0005']
 }    
 ,
 'z0002' : {
     'locInputDesc': 'What will you do now?', 
-    'locDesc': 'There\'s nothing of interest here. You should turn around.', 
+    'locDesc': 'This Dark Forest sure is mighty dark', 
     'locAdditionalDesc': '', 
-    'entryConditions': ['e010001', 'e020001'], 
-    'leaveConditions': ['l010001', 'l020001'], 
-    'moveCmds': 'm010002'
+    'entryConditions': [], 
+    'leaveConditions': [], 
+    'moveCmds': ['m010002'],
+    'locObjects': ['ob0004']
 }   
 ,
 'z0003' : {
@@ -395,7 +419,8 @@ locDB = {
     'locAdditionalDesc': '', 
     'entryConditions': ['e010001', 'e020001'], 
     'leaveConditions': ['l010001', 'l020001'], 
-    'moveCmds': 'm010004'
+    'moveCmds': ['m010004'],
+    'locObjects': ['ob0001']
 }
 
 }

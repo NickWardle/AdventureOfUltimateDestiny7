@@ -51,7 +51,7 @@ def changeLoc(loc): #generic location changer
         de.bug("Location not in gD.locDB")
     
     # show thinkingDots
-    print('\n. . . . L O A D I N G . . . .\n')
+    printText('\n. . . . L O A D I N G . . . .\n')
       
     # render new location
     rndr.render_locScreen(gD.LOCDATA)

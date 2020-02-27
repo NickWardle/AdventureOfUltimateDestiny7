@@ -5,12 +5,13 @@ import gameData as gD
 
 ## == Helpful code snippets to transform data and return it
 
-def listify(d, pronoun=False, terminator='and', case='l'):
+def listify(d, pronoun=False, terminator='and', case='l', sentence=False):
     
     # d = data, must be an array
     # terminator = 'word(s)' placed before the last item in the list
     #TODO: pronoun = 'word' placed before each item: the, a/an, 'user'
     # case = whole list: lower, firstlettercapitalized, upper
+    #sentence = if the list should be separated by "." instead of ","
     
     # sort out list punctuation: "," "single item" & terminator
     myListString = ''
@@ -29,9 +30,13 @@ def listify(d, pronoun=False, terminator='and', case='l'):
         elif i < len(d)-1:
             myListString += pr
             myListString += d[i]
-            myListString += ", "
+            if sentence == True:
+                myListString += ". "
+            else:
+                myListString += ", "
         else:
-            myListString += terminator 
+            if terminator != False:
+                myListString += terminator 
             myListString += " " 
             myListString += pr
             myListString += d[i]

@@ -199,8 +199,36 @@ def render_locScreen(d): #generic location renderer
     #TODO: Want to build a location out of the available points of interest
     # such as exits: orthogonal and object-based
     
-    # show location description
-    print(d['locDesc'])
+    loc_id = gD.CURRENT_LOC
+    locText = []
+    
+    de.bug(6, "This location ID is", loc_id)
+    
+    # Add location description
+    locText.append(d['locDesc'])
+    
+    for mID in gD.locDB[loc_id]['moveCmds']:
+    
+        for i in gD.gameDB['moveCommandsDB'][mID].keys():
+            locText.append(gD.gameDB['moveCommandsDB'][mID][i]['moveDesc'])
+            locText.append(gD.gameDB['moveCommandsDB'][mID][i]['moveLoc'])
+    
+    ###### GOT TO HERE ########
+    ####  locText list is
+    #### WORKING SO FAR! :)))) ####
+    #### KEEP APPENDING!!
+    
+    # get all possible moves out of this location into an array
+    # d['moveCmds'][0].1..2
+    
+    # get all posible location objects
+    # d['locObjects'][0].1..2..
+
+    # locText.append()
+    de.bug(6, "locText array is", locText)
+
+    # print the whole array using listify
+    # tfs.listify(d, False, False, 'c', True)
 
     # show additional location descriptions (optional)
     if d['locAdditionalDesc'] != '':

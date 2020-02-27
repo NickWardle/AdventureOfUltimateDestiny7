@@ -33,6 +33,12 @@ shortLnNewLine = '-' * 40 + '\n'
 
 # == UI feedback text
 
+locStarters = ['There\'s', 'You see', 'There is', 'You can see']
+
+locListings = ['And', 'Also', 'Then', 'And there is']
+
+locTerminus = ['And finally', 'And also']
+
 exitMessage = "Exiting game..."
 
 cheaterMessage = ["Cheaters never win!", "Really? That's how you roll?", "I can see you, you know?"]
