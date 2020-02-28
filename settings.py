@@ -12,9 +12,13 @@ debug = True
 
 # Hide specific groups of debug messages, add group number to the list
 #group_hide = []
-group_hide = [1,2,3]
+group_hide = [1,2,3,4,5]
 
 
+# == EXTERNAL DATA FILE SETTINGS ===================================
+#data_file = "gameData"
+import gameData as ddf
+data_type = ddf.data_type
 
 # == SETTINGS & TEXT STRINGS FOR THE GAME ===================================
 
@@ -33,11 +37,13 @@ shortLnNewLine = '-' * 40 + '\n'
 
 # == UI feedback text
 
+locLoading = "---=== $ = $ = $ = $ = $ = $ = $ = $ = $ ===---"
+
 locStarters = ['There\'s', 'You see', 'There is', 'You can see']
 
 locListings = ['And', 'Also', 'Then', 'And there is']
 
-locTerminus = ['And finally', 'And also']
+locTerminus = ['And', 'And also']
 
 exitMessage = "Exiting game..."
 

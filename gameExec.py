@@ -40,15 +40,20 @@ while WIN == False:
 
     
     # get all legal MOVES for location 
-    moveObj = gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds']]
+    moveObj = gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds'][0]]
     legalMoves = []
     moveDesc = []
     moveDest = []
     
-    for i in range(len(moveObj)):
-        legalMoves.append(moveObj[i][0])
-        moveDesc.append(moveObj[i][1])
-        moveDest.append(moveObj[i][2])
+#    for i in range(len(moveObj)):
+#        legalMoves.append(moveObj[i][0])
+#        moveDesc.append(moveObj[i][1])
+#        moveDest.append(moveObj[i][2])
+    
+    for i,j in moveObj.items():
+        legalMoves.append(moveObj[i]['cmds'])
+        moveDesc.append(moveObj[i]['moveDesc'])
+        moveDest.append(moveObj[i]['moveLoc'])
         
     # get OBJECTS and object 'refs' array for location
     allObjects = []

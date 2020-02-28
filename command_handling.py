@@ -23,16 +23,20 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         # so we can action the correct function next
         cmd_spl = cmd.split("-")
         cmd_ky = cmd_spl[0]
-        my_cmd = legalInputs[cmd_spl[0]][int(cmd_spl[1])]
+#        my_cmd = legalInputs[cmd_spl[0]][int(cmd_spl[1])]
+        my_cmd = gD.allInputRefs[cmd_spl[0]][int(cmd_spl[1])]
+        
+        de.bug(1, "my_cmd is", my_cmd)
+        de.bug(1, "move cmds for this loc are", gD.LOCDATA['moveCmds'])
         
         if cmd_ky == "m": # MOVEMENT command
             
-            for i in gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds']]:
-                for j in i[0]:
+            for h, i in gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds'][0]].items():
+                for j in i['cmds']:
                     if my_cmd == j:
-                        moveDesc = i[1]
-                        if len(i) > 2:
-                            moveDest = i[2]
+                        moveDesc = i['goDesc']
+                        if 'destId' in i:
+                            moveDest = i['destId']
                         else:
                             de.bug("this cmd doesn't change our location")
             

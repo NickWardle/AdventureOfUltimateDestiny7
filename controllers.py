@@ -8,6 +8,7 @@ import debugger as de
 import gameData as gD
 import renderers as rndr
 import transformers as tfs
+import settings as ss
 
 
 # == CONTROLLERS =================================================
@@ -50,11 +51,21 @@ def changeLoc(loc): #generic location changer
     else:
         de.bug("Location not in gD.locDB")
     
-    # show thinkingDots
-    printText('\n. . . . L O A D I N G . . . .\n')
+    # show location Loading text-pattern
+    printText(ss.locLoading)
       
     # render new location
     rndr.render_locScreen(gD.LOCDATA)
+    
+
+def locConjGenerator(n, t):
+    
+    if t == "s":
+        return ss.locStarters[n]
+    elif t == "l":
+        return ss.locListings[n]
+    elif t == "t":
+        return ss.locTerminus[n]
       
 
                 
@@ -114,10 +125,18 @@ def update_objectState(obj_id, o, cmd_ref, p=None): # what happens after the use
                     
                 # add the contained items to the game world
                 #send t  --  {'object' : [..,..]} dict
-                cont_objs = tfs.updateGameObjects(o_s['contains'], 'add') 
+                cont_objs, t = tfs.updateGameObjects(o_s['contains'], 'add') 
+                
+                # returns a list [cont_objs, t]
+                # cont_objs are the object descriptions
+                # t is the type of container (i.e. box, door)
                 
                 # feedback to player the objects they have discovered
-                printText([cont_objs, o['name']], "contained by")
+                if t == "in":
+                    printText([cont_objs, o['name']], "contained by")
+                   
+                elif t == "via":
+                    printText([cont_objs, o['name']], "seen through")
  
     elif cmd_ref in ('close','lock'): # close, lock etc.
         

@@ -5,12 +5,15 @@ Created on Fri Jul 13 09:24:51 2018
 
 @author: nick.wardle
 """
-
+#import debugger as de
 import pandas as pd
 import numpy as np
 
 
 # == GLOBALS ============================================================
+
+# Declare data type for dataAPI
+data_type = 'dict'
 
 def init():
     global allInputRefs
@@ -37,8 +40,8 @@ def init():
     allMoves = {}
     allMoves_lst = []
     for i, j in gameDB['moveCommandsDB'].items():
-        for k in j:
-            for l in k[0]:
+        for ii, k in j.items():
+            for l in k['cmds']:
                 allMoves_lst.append(l)
     allMoves['m'] = list(set(allMoves_lst))
     allObjects = {}
@@ -151,7 +154,7 @@ gameDB = {
          'cmds' : ["n", "north"], 
          'moveDesc' : "an exit to the North",
          'moveLoc' : "through the dark trees",
-         'goDesc' : "You walk the North into the Dark Forest", 
+         'goDesc' : "You walk North into the Dark Forest", 
          'destId' : 'z0002'
     }
     ,
@@ -183,7 +186,7 @@ gameDB = {
 'm010003' : { 
 
 'd030001' : {
-        'cmds' : ["inside", "into"],
+        'cmds' : ["hidden entrance"],
         'moveDesc' : "a hidden entrance way",
         'moveLoc' : "amongst the rocks",
         'goDesc' : "You step into the dark entrance", 
@@ -196,8 +199,8 @@ gameDB = {
 'm010004' : { 
 
 'd040001' : {
-        'cmds' : ["outside"],
-        'moveDesc' : "an way out of the cave",
+        'cmds' : ["outside", "leave the cave"],
+        'moveDesc' : "a way out of the cave",
         'moveLoc' : "outside into the light",
         'goDesc' : "You step back out into the sunlight", 
         'destId' : 'z0001'
@@ -304,7 +307,7 @@ gameDB = {
 'ob0003' : {
     'refs': ['dagger', 'sharp dagger'],
     'name': 'Sharp dagger',
-    'desc': 'A vicious, sharp, pointy dagger', 
+    'desc': 'a vicious, sharp, pointy dagger', 
     'location': 'glinting on the floor', 
     'permissions': {}, 
     'state': {'contained_by': ['ob0002']}, 
@@ -420,7 +423,7 @@ locDB = {
     'entryConditions': ['e010001', 'e020001'], 
     'leaveConditions': ['l010001', 'l020001'], 
     'moveCmds': ['m010004'],
-    'locObjects': ['ob0001']
+    'locObjects': []
 }
 
 }

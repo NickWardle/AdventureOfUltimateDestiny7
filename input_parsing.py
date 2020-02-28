@@ -395,7 +395,7 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         
         # build and return the correctly ordered variables to gameExec
         parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
-        de.bug("PARSED_FINAL", parsed_final)
+        de.bug(1, "PARSED_FINAL", parsed_final)
         return parsed_final
         
 
@@ -481,15 +481,15 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
         matched_cmds = wrdChecker(tkns, parsed_cmds)
     
     if matched_cmds == False:
-        de.bug("USERCONF", gD.USERCONF)
-        de.bug("PROMPT", gD.PROMPT)
-        de.bug("UNKNOWN JUNK", gD.UNKNOWN_INPUT)
+        de.bug(1, "USERCONF", gD.USERCONF)
+        de.bug(1, "PROMPT", gD.PROMPT)
+        de.bug(1, "UNKNOWN JUNK", gD.UNKNOWN_INPUT)
         matched_cmds = [None, None, None, None]
     elif matched_cmds != None:
         de.bug(1, "successfully matched these commands", matched_cmds)
     else:
         matched_cmds = [None, None, None, None]
-        de.bug("there were no valid commands matched in the input")
+        de.bug(1, "there were no valid commands matched in the input")
     
     # RETURN all of the things!!
     return matched_cmds

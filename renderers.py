@@ -9,6 +9,7 @@ import random
 import transformers as tfs
 import settings as ss
 import gameData as gD
+import controllers as ctrls
 
 
 
@@ -114,6 +115,9 @@ def render_Text(d, t="default"): #generic text renderer
         
     elif t == 'container empty':
         print(ss.inputFeedbackPre, "The", d.lower(), "is empty!") 
+        
+    elif t == 'seen through':
+        print(ss.inputFeedbackPre, "You see", tfs.listify(d[0], True), "through the", d[1].lower()) 
 
     elif t == 'examine': # part of controllers.useObject()
         
@@ -194,41 +198,68 @@ def render_objectDedupe(d, inp):
 # screen renderers get their data from other modules
 
 
-def render_locScreen(d): #generic location renderer
+def render_locScreen(d): 
     
-    #TODO: Want to build a location out of the available points of interest
-    # such as exits: orthogonal and object-based
+    # procedural location renderer from moves and objests in gameDB
     
     loc_id = gD.CURRENT_LOC
     locText = []
     
-    de.bug(6, "This location ID is", loc_id)
-    
-    # Add location description
-    locText.append(d['locDesc'])
-    
+    # Add move descriptions
     for mID in gD.locDB[loc_id]['moveCmds']:
-    
+        
+        c = 1
+        
         for i in gD.gameDB['moveCommandsDB'][mID].keys():
+            # generate random starter, or joiner if count > 1
+            if c > 1:
+                n = random.randint(1,len(ss.locListings))-1
+                # joiner
+                conj = ctrls.locConjGenerator(n, "l")
+                c += 1
+            else:
+                n = random.randint(1,len(ss.locStarters))-1
+                # starter
+                conj = ctrls.locConjGenerator(n, "s")
+                c += 1
+                
+            locText.append(conj)
             locText.append(gD.gameDB['moveCommandsDB'][mID][i]['moveDesc'])
             locText.append(gD.gameDB['moveCommandsDB'][mID][i]['moveLoc'])
     
-    ###### GOT TO HERE ########
-    ####  locText list is
-    #### WORKING SO FAR! :)))) ####
-    #### KEEP APPENDING!!
     
-    # get all possible moves out of this location into an array
-    # d['moveCmds'][0].1..2
+    # Add location objects (if there are any)
+    if len(gD.locDB[loc_id]['locObjects']) > 0:
+        
+        c = 1
+        
+        for oID in gD.locDB[loc_id]['locObjects']:
+        
+            # generate random starter, or joiner if count > 1
+            if c == len(gD.locDB[loc_id]['locObjects']):
+                n = random.randint(1,len(ss.locTerminus))-1
+                # terminus
+                conj = ctrls.locConjGenerator(n, "t")
+                c += 1
+            elif c > 1:
+                n = random.randint(1,len(ss.locListings))-1
+                # joiner
+                conj = ctrls.locConjGenerator(n, "l")
+                c += 1
+            else:
+                n = random.randint(1,len(ss.locStarters))-1
+                # starter
+                conj = ctrls.locConjGenerator(n, "s")
+                c += 1
+                
+            locText.append(conj)
+            locText.append(gD.gameDB['objectsDB'][oID]['desc'])
+            locText.append(gD.gameDB['objectsDB'][oID]['location'])
     
-    # get all posible location objects
-    # d['locObjects'][0].1..2..
 
-    # locText.append()
-    de.bug(6, "locText array is", locText)
-
-    # print the whole array using listify
-    # tfs.listify(d, False, False, 'c', True)
+    # Add location description at the start and
+    # then print the whole locText array using listify
+    print(d['locDesc']+".", tfs.listify(locText, False, False, False, " ", ". ", [3,6,9,12,15,21,24,27,30,33,36])+".")
 
     # show additional location descriptions (optional)
     if d['locAdditionalDesc'] != '':
