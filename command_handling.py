@@ -7,7 +7,7 @@ Created on Fri Jul 13 09:24:51 2018
 import debugger as de
 import gameData as gD
 import renderers
-import transformers as tfs
+#import transformers as tfs
 import controllers as ctrls
 
 
@@ -15,7 +15,9 @@ import controllers as ctrls
 # modules that take inputs from player, or other modules, and update the models
 
 
-def doCommand(cmd, obj, jun, via, legalInputs, uiData):
+def doCommand(cmd, obj, jun, via, uiData):
+    
+    legalInputs = gD.LEGALINPUTS
     
     if cmd != None:
     
@@ -23,7 +25,6 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         # so we can action the correct function next
         cmd_spl = cmd.split("-")
         cmd_ky = cmd_spl[0]
-#        my_cmd = legalInputs[cmd_spl[0]][int(cmd_spl[1])]
         my_cmd = gD.allInputRefs[cmd_spl[0]][int(cmd_spl[1])]
         
         de.bug(1, "my_cmd is", my_cmd)
@@ -31,14 +32,15 @@ def doCommand(cmd, obj, jun, via, legalInputs, uiData):
         
         if cmd_ky == "m": # MOVEMENT command
             
-            for h, i in gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds'][0]].items():
-                for j in i['cmds']:
-                    if my_cmd == j:
-                        moveDesc = i['goDesc']
-                        if 'destId' in i:
-                            moveDest = i['destId']
-                        else:
-                            de.bug("this cmd doesn't change our location")
+            for m in gD.LOCDATA['moveCmds']:
+                for h, i in gD.gameDB['moveCommandsDB'][m].items():
+                    for j in i['cmds']:
+                        if my_cmd == j:
+                            moveDesc = i['goDesc']
+                            if 'destId' in i:
+                                moveDest = i['destId']
+                            else:
+                                de.bug("this cmd doesn't change our location")
             
             # show moveDesc feedback for moveCmd
             ctrls.printText(moveDesc, "move")            
@@ -251,7 +253,9 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
     
     ############## COMMANDS THAT REQUIRE NO OBJECT ################
     
-    if cmd_ref in gD.gameDB['actionCmds']['exploreCmds'] and via == None:
+    if cmd_ref in gD.gameDB['actionCmds']['exploreCmds'] and obj == None:
+        
+        ### == generic explore COMMANDS: look / search etc ====
         
         # give user feedback on their command
         ctrls.printText(None, cmd_ref)
@@ -260,71 +264,9 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
     
     if via != None:
     
-        ### == specific explore COMMANDS: look in / under etc ====   
-    
-        if cmd_ref in ('look'):
-        
-            de.bug(4, "We have a VIA UI command!", cmd_ref, jun, via)
-            
-            # check object access state
-            ob_access = tfs.getObjectState(this_via, 'access')
-                
-            de.bug(4, "ob_access is:", ob_access)
-            
-            ## check if object permissions prevent action
-            if ob_access == "unlocked":
-                
-                # add the contained items to the game world
-                cont_objs = tfs.updateGameObjects(gD.gameDB['objectsDB'][via_id]['state']['contains'], 'add') 
-                
-                # full or empty container?
-                if len(cont_objs) > 0:
-                    # feedback to player what they have discovered
-                    ctrls.printText([cont_objs, this_via['name']], "contained by")
-                else:
-                    ctrls.printText(this_via['name'], 'container empty')
-                
-            elif ob_access == "locked":
-                
-                # feedback to player about the req object
-                renderers.render_objectActions(this_via, cmd_ref, "locked_by")
-                
-                # does player have the req object?
-                this_via_obj = gD.gameDB['objectsDB'][this_via['permissions']['locked_by']]
-                if tfs.getInventorySlot(this_via_obj) == False:
-                    ctrls.printText(this_via_obj['name'], 'not in inv')
-            
-            else:
-                
-                can_look_in = tfs.objPermissions(this_via)
-                de.bug(4, "obj perms are", can_look_in)
-                
-                if can_look_in in ("ok", "unlocked"):
-                    
-                    # add the contained items to the game world
-                    cont_objs = tfs.updateGameObjects(gD.gameDB['objectsDB'][via_id]['state']['contains'], 'add') 
-                    
-                    # full or empty container?
-                    if len(cont_objs) > 0:
-                        # feedback to player what they have discovered
-                        ctrls.printText([cont_objs, this_via['name']], "contained by")
-                    else:
-                        ctrls.printText(this_via['name'], 'container empty')
-                
-                else:
-                    
-                    # feedback to player about the req object
-                    renderers.render_objectActions(this_via, cmd_ref, can_look_in)
-                    
-                    # does player have the req object?
-                    this_via_obj = gD.gameDB['objectsDB'][this_via['permissions']['locked_by']]
-                    if tfs.getInventorySlot(this_via_obj) == False:
-                        ctrls.printText(this_via_obj['name'], 'not in inv')
-                
-                
-        ### == navigation COMMANDS w/o VIA e.g. 'go in; =========
+        ### == navigation COMMANDS w/o VIA e.g. 'go in', 'get in' =========
                                 
-        elif cmd_ref in ('get', 'go', 'walk'):
+        if cmd_ref in ('get', 'go', 'walk'):
                         
             de.bug(3, "We have a VIA movement type of command!", cmd_ref, jun, via)
         
@@ -340,13 +282,51 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
     
     if obj != None:
                     
+        ### == specific explore COMMANDS: look in / under etc ====   
+    
+        if cmd_ref in gD.gameDB['actionCmds']['exploreCmds']:
+        
+            # check object access state
+            ob_access = ctrls.get_ObjectState(this_obj, 'access')
+                
+            de.bug(4, "ob_access is:", ob_access)
+            
+            # GET the contained objects
+            ids, descs, t = ctrls.get_ObjectContents(obj_id)
+            
+            ## check if object permissions prevent action
+            if ob_access == "unlocked":
+                
+                # ADD the object to the world local objects
+                ctrls.update_WorldState(obj_id, False, 'add')
+                
+                de.bug(1, "contained objects", descs)
+                
+                # full or empty container?
+                if len(descs) > 0:
+                    # feedback to player what they have discovered
+                    ctrls.printText([descs, this_obj['name']], "contained by")
+                else:
+                    ctrls.printText(this_obj['name'], 'container empty')
+                
+            elif ob_access == "locked":
+                
+                # feedback to player about the req object
+                renderers.render_objectActions(this_obj, cmd_ref, "locked_by")
+                
+                # does player have the req object?
+                this_via_obj = gD.gameDB['objectsDB'][this_obj['permissions']['locked_by']]
+                if ctrls.get_InventorySlot(this_via_obj) == False:
+                    ctrls.printText(this_via_obj['name'], 'not in inv')
+            
+                
+            
+            
         ### == examine COMMANDS: look at, examine etc. =============
         
-        if cmd_ref == "look at":
+        elif cmd_ref == "look at":
             
-            d = [this_obj['desc'],tfs.getObjectState(this_obj, s='access')]
-#            d.append(this_obj['desc'])
-#            d.append(tfs.getObjectState(this_obj, s='access'))
+            d = [this_obj['desc'],ctrls.get_ObjectState(this_obj, s='access')]
             
             # show object description
             ctrls.printText(d, 'look at')
@@ -378,10 +358,13 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
             for i in gD.gameDB['actionCmds']['getCmds']:
                 if cmd_ref == i:
                     
-                    de.bug(4, "this_obj", this_obj)
+                    # GET the contained objects
+                    ids, descs, t = ctrls.get_ObjectContents(obj_id)
                     
-                    # add obj to inv & ctrls.update_worldState
-                    if tfs.updateInventory(this_obj, "add") != False:
+                    de.bug(4, "these contained objs", ids, "this containment type", t, "this_obj", this_obj)
+                    
+                    # add obj to inv & ctrls.update_WorldState
+                    if ctrls.update_Inventory(this_obj, "add") != False:
                     
                         # render feedback to player
                         renderers.render_objectActions(this_obj, cmd_ref, "get-take")
@@ -390,17 +373,16 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                         renderers.render_charInventory()
                         
                         # update child object state & get parent container
-                        p = ctrls.update_objectState(obj_id, this_obj, cmd_ref)
+                        p = ctrls.update_ObjectState(obj_id, this_obj, cmd_ref)
                         
+                        # update parent container state using returned "p"
                         if p != None:
                             
-                            # update parent container (p) state
-                            ctrls.update_objectState(obj_id, this_obj, 'un_contain', p)
+                            ctrls.update_ObjectState(obj_id, this_obj, 'un_contain', p)
                             
-                        else:
-                        
-                            # no parent container, update world state instead
-                            ctrls.update_worldState([obj_id], this_obj, cmd_ref)
+                        # finally REMOVE the contained items from the world
+                        # because they are now in player inventory
+                        ctrls.update_WorldState(ids, t, 'remove')
                         
                     
                     else:
@@ -420,21 +402,21 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                 if cmd_ref == i:
                     
                     # remove obj from inv
-                    if tfs.updateInventory(this_obj, "remove") != False:
+                    if ctrls.update_Inventory(this_obj, "remove") != False:
                         
                         # is there a VIA object for the action?
                         if via != None: # put something IN somewhere (VIA)
                         
                             # update parent container (via) state
-                            ctrls.update_objectState(obj_id, this_obj, 'add', via_id)
+                            ctrls.update_ObjectState(obj_id, this_obj, 'add', via_id)
                             
                         else: # simple put/drop command
                         
                             # render feedback to player
                             renderers.render_objectActions(this_obj, cmd_ref, "put-leave")
                         
-                        # remove the object from the world local objects
-                        ctrls.update_worldState([obj_id], this_obj, cmd_ref)
+                        # ADD the object to the world local objects
+                        ctrls.update_WorldState(obj_id, False, 'add')
                         
                         # render the player inventory
                         renderers.render_charInventory()
@@ -445,13 +427,93 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                         # trying to remove obj not in inv
                         ctrls.printText(this_obj['name'], 'not in inv')
         
+        
+            
+            ### == open/unlock command do object custom action =============
+            
+            if cmd_ref in ("open", "unlock"):
+                
+                # check object access state
+                ob_access = ctrls.get_ObjectState(this_obj, s='access')
+                
+                de.bug(4, "ob_access is:", ob_access)
+                
+                if ob_access == 'locked':
+                
+                    # check if object permissions prevent action
+                    can_open = ctrls.get_ObjectPermissions(this_obj)
+                    de.bug(4, "lock perms are", can_open)
+                    
+                    if can_open in ("ok", "unlocked", "has-req-obj"): # obj not locked
+                        
+                        # render feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, can_open, this_obj['permissions']['locked_by'])
+                        
+                        # update object state
+                        ctrls.update_ObjectState(obj_id, this_obj, cmd_ref)
+                        
+                    else:
+                        
+                        # feedback access state of object to player
+                        renderers.render_objectActions(this_obj, cmd_ref, can_open)
+                        
+                        # player does not have the req object
+                        this_via = gD.gameDB['objectsDB'][this_obj['permissions']['locked_by']]
+                        if ctrls.get_InventorySlot(this_via) == False:
+                            ctrls.printText(this_via['name'], 'not in inv')
+                        
+                else:
+                    
+                    # not locked => can open: update object state
+                    ctrls.update_ObjectState(obj_id, this_obj, cmd_ref)
+    
+
+            ### == close/lock command do object custom action =============
+            
+            elif cmd_ref in ("lock", "close"):
+                
+                # check object access state
+                ob_access = ctrls.get_ObjectState(this_obj, s='access')
+                de.bug(4, "ob_access is:", ob_access)
+                
+                
+                if ob_access == 'unlocked':
+                    
+                    # check if object permissions prevent action
+                    can_close = ctrls.get_ObjectPermissions(this_obj)
+                    de.bug(4, "lock perms are", can_close)
+                    
+                    if can_close == "has-req-obj": 
+                    
+                        # render feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, can_close, this_obj['permissions']['unlocked_by'])
+                        
+                        # update object state
+                        ctrls.update_ObjectState(obj_id, this_obj, cmd_ref)
+                        
+                    else:
+                        
+                        # render object state feedback to player
+                        renderers.render_objectActions(this_obj, cmd_ref, can_close)
+                        
+                        # player does not have the req object
+                        this_via = gD.gameDB['objectsDB'][this_obj['permissions']['unlocked_by']]
+                        if ctrls.get_InventorySlot(this_via) == False:
+                            ctrls.printText(this_via['name'], 'not in inv')
+                    
+                else:
+                    
+                    # feedback to player object already locked
+                    ctrls.printText(this_obj['name'], 'already locked')
+           
+            
             
             ### == use command do object custom action =============
             
-            if cmd_ref == "use":
+            elif cmd_ref == "use":
                 
                 # check used obj is in player inv
-                if tfs.getInventorySlot(this_obj) != False:
+                if ctrls.get_InventorySlot(this_obj) != False:
                 
                     # no target, singleton "use"
                     if via != None:
@@ -461,7 +523,7 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                         ## INCOMPLETE . JUST ALL OF THIS!!
                         
                         # check object STATE
-                        ctrls.update_objectState(obj_id, this_obj, cmd_ref)
+                        ctrls.update_ObjectState(obj_id, this_obj, cmd_ref)
                         de.bug("use key on -", via)
                         #use key on box
                         
@@ -481,84 +543,6 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                 else:
                     # trying to use obj not in inv
                     ctrls.printText(this_obj['name'], 'not in inv')
-            
-            ### == open/unlock command do object custom action =============
-            
-            elif cmd_ref in ("open", "unlock"):
-                
-                # check object access state
-                ob_access = tfs.getObjectState(this_obj, s='access')
-                
-                de.bug(4, "ob_access is:", ob_access)
-                
-                if ob_access == 'locked':
-                
-                    # check if object permissions prevent action
-                    can_open = tfs.objPermissions(this_obj)
-                    de.bug(4, "lock perms are", can_open)
-                    
-                    if can_open in ("ok", "unlocked", "has-req-obj"): # obj not locked
-                        
-                        # render feedback to player
-                        renderers.render_objectActions(this_obj, cmd_ref, can_open, this_obj['permissions']['locked_by'])
-                        
-                        # update object state
-                        ctrls.update_objectState(obj_id, this_obj, cmd_ref)
-                        
-                    else:
-                        
-                        # feedback access state of object to player
-                        renderers.render_objectActions(this_obj, cmd_ref, can_open)
-                        
-                        # player does not have the req object
-                        this_via = gD.gameDB['objectsDB'][this_obj['permissions']['locked_by']]
-                        if tfs.getInventorySlot(this_via) == False:
-                            ctrls.printText(this_via['name'], 'not in inv')
-                        
-                else:
-                    
-                    # not locked => can open: update object state
-                    ctrls.update_objectState(obj_id, this_obj, cmd_ref)
-    
-
-            ### == close/lock command do object custom action =============
-            
-            elif cmd_ref in ("lock", "close"):
-                
-                # check object access state
-                ob_access = tfs.getObjectState(this_obj, s='access')
-                de.bug(4, "ob_access is:", ob_access)
-                
-                
-                
-                if ob_access == 'unlocked':
-                    
-                    # check if object permissions prevent action
-                    can_close = tfs.objPermissions(this_obj)
-                    de.bug(4, "lock perms are", can_close)
-                    
-                    if can_close == "has-req-obj": 
-                    
-                        # render feedback to player
-                        renderers.render_objectActions(this_obj, cmd_ref, can_close, this_obj['permissions']['unlocked_by'])
-                        
-                        # update object state
-                        ctrls.update_objectState(obj_id, this_obj, cmd_ref)
-                        
-                    else:
-                        
-                        # render object state feedback to player
-                        renderers.render_objectActions(this_obj, cmd_ref, can_close)
-                        
-                        # player does not have the req object
-                        this_via = gD.gameDB['objectsDB'][this_obj['permissions']['unlocked_by']]
-                        if tfs.getInventorySlot(this_via) == False:
-                            ctrls.printText(this_via['name'], 'not in inv')
-                    
-                else:
-                    
-                    # feedback to player object already locked
-                    ctrls.printText(this_obj['name'], 'already locked')
                     
         
         else:

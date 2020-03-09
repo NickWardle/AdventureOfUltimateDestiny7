@@ -10,7 +10,6 @@ import re
 from nltk.tokenize import word_tokenize
 
 
-
 # == PARSE INPUT =================================================
 
 def tokenizeInput(inp): # tokenise the input
@@ -26,7 +25,15 @@ def tokenizeInput(inp): # tokenise the input
     return outputTokens
 
 
-def cmdDidYouMeanThis(tks, pdl): # check with player what input actually was
+def cmdDidYouMeanThis(tks, parsed_list): # check with player what input actually was
+    
+    # flatten out parsed_cmds because we don't need it segmented by token
+    pdl = {}
+    for a, b in parsed_list.items():
+        for c, d in b.items():
+            pdl[c] = d
+    
+    de.bug(1, "Original parsed_list", parsed_list, "vs flatten pdl list", pdl)
     
     # get first 'cmd' in parsed_list of cmds
     c_lst = [a for a, b in pdl.items()]
@@ -161,21 +168,119 @@ def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns):
                 break
 
         
-
+        
 def wrdChecker(tkns, parsed_cmds, key_num=1):
     
-    # If parsed_cmds does NOT have a 'xxx'+key_num then the
-    # input probably contained junk words before the commands
+    # If the first dict group in parsed_cmds has nothing in it
+    # the first token did not match and so is probably junk
     # check with the player what they really wanted to do first
     # and automatically resend commands if correct to do so
     
     junk_wrds = False
-    for k in parsed_cmds.keys():
-        de.bug(1, "checking for junk words", str(key_num), k[0])
-        if str(key_num) in k[0]:
-            break
+            
+    if len(parsed_cmds[tkns[0]]) < 1:
+        de.bug(1, "First token", "'"+tkns[0]+"'", "not a valid input. Check for junk input.")
+        junk_wrds = True
+    
+    # handle finding junk words (above) or second pass as a "reqconf"
+    if junk_wrds == True or gD.PROMPT == 'reqconf':
+        
+        if gD.PROMPT == False:
+            cmdDidYouMeanThis(tkns, parsed_cmds)
+            # return matched_cmds as False to parseInput()
+            return False
+        
+        elif gD.PROMPT == 'reqconf': # require Y/N confirmation
+            
+            if tkns[0].lower() == "y": # if y or Y entered
+                gD.PROMPT = 'autoresend'
+                
+            else: # if anything else treat it as a NO (bcoz 'n' = 'north')
+                gD.USERCONF = None
+                gD.PROMPT = False
+                gD.UNKNOWN_INPUT = None
+            
+            # return matched_cmds as False to parseInput()
+            return False
+            
+    else: # check parsed_cmds as normal
+        
+        # does the next token share any matched commands with this one?
+        working_tokens = tkns
+        i = 0
+        current_token = working_tokens[i]
+        next_token = working_tokens[i+1]
+        shared_cmds = []
+        
+        
+        for a, b in parsed_cmds[current_token].items():
+            for cm in b:
+                shared_cmds.append(cm)
+                    
+        for a, b in parsed_cmds[next_token].items():
+            for cm in b:
+                shared_cmds.append(cm)
+                    
+        de.bug(1, "SHARED cmds", shared_cmds)
+        
+        
+        
+        # bump the i cursor and keep going (because we combined two items
+        # we just need to check the next item, as normal)
+        # if NOT a valid command, we have a weird problem..!!
+        
+        # check shared_cmds for duplicates
+        dupe_found = False
+        dupe_cmds = []
+        for c in shared_cmds:
+            if shared_cmds.count(c) > 1:
+                dupe_cmds.append(c)
+                dupe_found = True
+                
+        # if so combine current + next tokens in our working_tokens list
+        if dupe_found == True:
+            working_tokens[i] = current_token +" "+ next_token
+            del working_tokens[i+1]
+            
+        de.bug(1, "AMENDED working_tokens", working_tokens)
+        
+        # then check if the combined tokens match a command and if so
+        if len(dupe_cmds) > 2:
+            de.bug(1, "TOO MANY duplicate commands found for", dupe_cmds)
+        
+        cmd_elms = dupe_cmds[0].split("-")
+        if working_tokens[i] == gD.LEGALINPUTS[cmd_elms[0]][int(cmd_elms[1])]:
+            de.bug(1, "this command is", dupe_cmds[0])
+            
         else:
-            junk_wrds = True
+            
+            de.bug(1, "We have a weird problem with this input", working_tokens[i], "it doesn't resolve to one single command in gameData")
+            
+        
+        ######### GOT TO HERE #################
+        ## Solved multiple-word input commands
+        ## Now need to handle normal single word ones
+        ## and then to end up with known_cmds['getCmds-2', 'o-5']
+        ##
+        ## for example so we can re-use the bottom half of original 
+        ## wrdChecker
+        ##
+        ## THEN still need to solve the original "door" issue
+        
+        
+
+def wrdChecker2(tkns, parsed_cmds, key_num=1):
+    
+    # If the first dict group in parsed_cmds has nothing in it
+    # the first token did not match and so is probably junk
+    # check with the player what they really wanted to do first
+    # and automatically resend commands if correct to do so
+    
+    junk_wrds = False
+            
+    if len(parsed_cmds[tkns[0]]) < 1:
+        de.bug(1, "First token", "'"+tkns[0]+"'", "not a valid input. Check for junk input.")
+        junk_wrds = True
     
     # handle finding junk words (above) or second pass as a "reqconf"
     if junk_wrds == True or gD.PROMPT == 'reqconf':
@@ -204,149 +309,172 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         known_cmds = []
         parsed_final = []
         
-        # if there is more than one potential match found
-        if len(parsed_cmds) > 1:
-            
-            # check for string matches in sequential cmd-lists, because these might be two-word entities (or two seperate entities)
-            check_array = []
-            parsed_matches = []
-            check_start_index = 0
-            sequence = 0
-            
-            for p, q in parsed_cmds.items():
-                de.bug(1, "FOR LOOP: we are at", q)
-                
-                # put current cmd-list into a check array
-                check_array.append(q)
-                de.bug(1, "1. current check array", check_array)
-                
-                # check to see if the check array slice has more than one item in it
-                if len(check_array) > 1:
-                    # Check if the item we just added has anything 
-                    # similar in to the any of the other items in the 
-                    # check list back as far as the check-start-index
-                    check_array_slice = check_array[check_start_index:]
-                    de.bug(1, "2. compare check array from this start point", check_start_index, check_array_slice)
-                    for itm in check_array_slice:
-                        de.bug(1, "3. items in sequence so far", sequence)
-                        found_match = set(check_array_slice[len(check_array_slice)-1]).intersection(itm)
-                        if len(found_match) > 0 and q != itm:
-                            # if it does
-                            de.bug(1, "4. check for a match and found something", found_match)
-                            sequence += 1
-                            
-                            # no need to check further
-                            break
-                        
-                        else:
-                            de.bug(1, "4. nothing matching found")
-                            
-                            if sequence == 1:
-                                # add the command/object one less than the current list 
-                                # length to the list of known commands to return
-                                de.bug(1, "5.", check_array_slice[len(check_array_slice)-2], "must be a singleton")
-                                parsed_matches.append(check_array_slice[len(check_array_slice)-2])
-                            
-                                # clean last element off check_array
-                                check_array.pop(len(check_array)-2)
-                                de.bug(1, "7. removed it from check array", check_array)
-    
-                            else:
-                                de.bug(1, "4-i. But what was sequence at this point?", sequence)
-                                st = ((len(check_array)-1)-sequence)
-                                en = len(check_array)-1
-                                parsed_matches.append(check_array[st:en])
-                                sequence = 1
-                                de.bug(1, "reset sequence to", sequence)
-                                
-                            
-                            # set a new check-start-index as the length-1 of the check list
-                            check_start_index = check_array.index(check_array_slice[len(check_array_slice)-1])
-                            de.bug(1, "8. new check start index", check_start_index)
-                            
-                            #no need to continue checking
-                            break
-                
-                else:
-                    de.bug(1, "2. nothing to compare", check_array)
-                    sequence += 1
-            
-                # increment to next item
-            
-            ### PARSING COMPLETE - POST FOR-LOOP CLEAN UP TIME ###############
-            # If sequence > 1, we need to manually add the last multi-group to the master list
-            # because the FOR loop finished before that happened
-            if sequence > 1:
-                st = len(check_array)-sequence
-                en = len(check_array)
-                parsed_matches.append(check_array[st:en])
-                
-            # If sequence == 1, pop() the last item from check_array
-            # and append it to singletons instead, because it doesn't need checking as a 'multiple'
-            elif sequence == 1:
-                should_be_singleton = check_array.pop()
-                parsed_matches.append(should_be_singleton)
-                
-            # all commands now in one list parsed_matches
-            de.bug(1, "PARSED_MATCHES ::", parsed_matches)
+        # handle this token by token and keep the output discrete 
+        # to disambiguate between duplicate matching words in the 
+        # gameData file so that we can apply logic after commands/objects
+        # have been matched to say: choose a cmd, or choose an obj
+        # because it makes more lexical sense i.e. open door where
+        # door could match as an object AND as a move cmd, but it makes
+        # more lexical sense to choose door as an object after a cmd is
+        # in the first matched slot
 
-            # find the common cmds in each part of the parsed_matches list 
-            # and put them into sets{}
-            tmp_list = []
-            final_candidates = []
-            match_candidates = {}
+        for tkn, token_group in parsed_cmds.items():
             
-            for grp in parsed_matches:
-                for i in grp:
-                    # check the item is not a single word
-                    if type(i) is list:
-                        # concat all lists together to de-dupe later
-                        tmp_list.extend(i)
-                    else:
-                        # just add the grp for singleton wrdLengthChecking later
-                        final_candidates.append(grp)
-                        break
-                        
-                # de-dupe list using this set{} function
-                if tmp_list != []:
-                    match_candidates = set([x for x in tmp_list if tmp_list.count(x) > 1])
-                    final_candidates.append(match_candidates)
-                    tmp_list = []
+            de.bug(1, "Current token_group", token_group)
+            
+            # if there is more than one potential match found
+            if len(token_group) > 1:
                 
+                # check for string matches in sequential cmd-lists, because these might be two-word entities (or two seperate entities)
+                check_array = []
+                parsed_matches = []
+                check_start_index = 0
+                sequence = 0
+                
+                for p, q in token_group.items():
+                    de.bug(1, "FOR LOOP: we are at", q)
                     
-            de.bug(1, "final de-duped matches", final_candidates)
-            
-            # ONLY need to send set()s in final_candidates that have len > 1
-            # to the lengthchecker, because we know ALREADY KNOW the others :)
-            
-            for s in final_candidates:
-                if len(s) > 1:
-                    de.bug(1, "sending this to lengthChecker", s)
-                    valid = cmdLengthChecker(s, parsed_cmds, tkns)
-                    de.bug(1, "after cmdLengthChecker() matched cmd is", valid)
+                    # put current cmd-list into a check array
+                    check_array.append(q)
+                    de.bug(1, "1. current check array", check_array)
                     
-                    if valid != False:
-                        # Add cmd to the list of commands we will return to gameExec
-                        known_cmds.append(valid)
-                        de.bug(1, "found this valid cmd", valid)
+                    # check to see if the check array slice has more than one item in it
+                    if len(check_array) > 1:
+                        # Check if the item we just added has anything 
+                        # similar in to the any of the other items in the 
+                        # check list back as far as the check-start-index
+                        check_array_slice = check_array[check_start_index:]
+                        de.bug(1, "2. compare check array from this start point", check_start_index, check_array_slice)
+                        for itm in check_array_slice:
+                            de.bug(1, "3. items in sequence so far", sequence)
+                            found_match = set(check_array_slice[len(check_array_slice)-1]).intersection(itm)
+                            if len(found_match) > 0 and q != itm:
+                                # if it does
+                                de.bug(1, "4. check for a match and found something", found_match)
+                                sequence += 1
+                                
+                                # no need to check further
+                                break
+                            
+                            else:
+                                de.bug(1, "4. nothing matching found")
+                                
+                                if sequence == 1:
+                                    # add the command/object one less than the current list 
+                                    # length to the list of known commands to return
+                                    de.bug(1, "5.", check_array_slice[len(check_array_slice)-2], "must be a singleton")
+                                    parsed_matches.append(check_array_slice[len(check_array_slice)-2])
+                                
+                                    # clean last element off check_array
+                                    check_array.pop(len(check_array)-2)
+                                    de.bug(1, "7. removed it from check array", check_array)
+        
+                                else:
+                                    de.bug(1, "4-i. But what was sequence at this point?", sequence)
+                                    st = ((len(check_array)-1)-sequence)
+                                    en = len(check_array)-1
+                                    parsed_matches.append(check_array[st:en])
+                                    sequence = 1
+                                    de.bug(1, "reset sequence to", sequence)
+                                    
+                                
+                                # set a new check-start-index as the length-1 of the check list
+                                check_start_index = check_array.index(check_array_slice[len(check_array_slice)-1])
+                                de.bug(1, "8. new check start index", check_start_index)
+                                
+                                #no need to continue checking
+                                break
+                    
                     else:
-                        de.bug(1, "not enough matches to complete command phrase - invalid command:", valid)
+                        de.bug(1, "2. nothing to compare", check_array)
+                        sequence += 1
+                
+                    # increment to next item
+                
+                ### PARSING COMPLETE - POST FOR-LOOP CLEAN UP TIME #########
+                # If sequence > 1, we need to manually add the last multi-group to the master list
+                # because the FOR loop finished before that happened
+                if sequence > 1:
+                    st = len(check_array)-sequence
+                    en = len(check_array)
+                    parsed_matches.append(check_array[st:en])
                     
-                else:
+                # If sequence == 1, pop() the last item from check_array
+                # and append it to singletons instead, because it doesn't need checking as a 'multiple'
+                elif sequence == 1:
+                    should_be_singleton = check_array.pop()
+                    parsed_matches.append(should_be_singleton)
                     
-                    # add the item to the list of known_cmds
-                    known_cmds.append(*s)
+                # all commands now in one list parsed_matches
+                de.bug(1, "PARSED_MATCHES ::", parsed_matches)
+    
+                # find the common cmds in each part of the parsed_matches list 
+                # and put them into sets{}
+                tmp_list = []
+                final_candidates = []
+                match_candidates = {}
+                
+                for grp in parsed_matches:
+                    for i in grp:
+                        # check the item is not a single word
+                        if type(i) is list:
+                            # concat all lists together to de-dupe later
+                            tmp_list.extend(i)
+                        else:
+                            # just add the grp for singleton wrdLengthChecking later
+                            final_candidates.append(grp)
+                            break
+                            
+                    # de-dupe list using this set{} function
+                    if tmp_list != []:
+                        match_candidates = set([x for x in tmp_list if tmp_list.count(x) > 1])
+                        final_candidates.append(match_candidates)
+                        tmp_list = []
+                    
+                        
+                de.bug(1, "final de-duped matches", final_candidates)
+                
+                # ONLY need to send set()s in final_candidates that have len > 1
+                # to the lengthchecker, because we know ALREADY KNOW the others :)
+                
+                for s in final_candidates:
+                    if len(s) > 1:
+                        de.bug(1, "sending this to lengthChecker", s)
+#                        valid = cmdLengthChecker(s, parsed_cmds, tkns)
+                        valid = cmdLengthChecker(s, token_group, tkns)
+                        de.bug(1, "after cmdLengthChecker() matched cmd is", valid)
+                        
+                        if valid != False:
+                            # Add cmd to the list of commands we will return to gameExec
+                            known_cmds.append(valid)
+                            de.bug(1, "found this valid cmd", valid)
+                        else:
+                            de.bug(1, "not enough matches to complete command phrase - invalid command:", valid)
+                        
+                    else:
+                        
+                        # add the item to the list of known_cmds
+                        known_cmds.append(*s)
+                
+            # single word only inputted
+            else:
+                
+                de.bug(1, "single word command detected")
+                for x, y in token_group.items():
+#                    valid = cmdLengthChecker(y, parsed_cmds, tkns)
+                    valid = cmdLengthChecker(y, token_group, tkns)
+                    if valid != False:
+                        known_cmds.append(valid)
+                    else: 
+                        de.bug("that wasn't a fully formed command, ignoring it")
             
-        # single word only inputted
-        else:
             
-            de.bug(1, "single word command detected")
-            for x, y in parsed_cmds.items():
-                valid = cmdLengthChecker(y, parsed_cmds, tkns)
-                if valid != False:
-                    known_cmds.append(valid)
-                else: 
-                    de.bug("that wasn't a fully formed command, ignoring it")
+            
+            
+            
+            
+            
+            
             
         de.bug(1, "ALL KNOWN COMMANDS, in order", known_cmds)        
         
@@ -376,22 +504,11 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         
         de.bug(1, "type_list", type_list)
         
-        # assign obj and via
-        # COMPLEX GRAMMAR BIT #######
-        # if type_list is [cmd, jun, obj] then the obj is actually via
-        # e.g. look in the box = look (me) in the box
-        # or get in the box = get (me) in the box
-        
-        if type_list[0] == 'cmd' and type_list[1] == 'jun':
-            if len(obj_ls) > 1:
-                a_via = obj_ls[1] # ignore second obj in the list
-            elif len(obj_ls) == 1:
-                a_via = obj_ls[0]
-        else:
-            if len(obj_ls) > 1:
-                a_obj, a_via = obj_ls
-            elif len(obj_ls) == 1:
-                a_obj = obj_ls[0]
+        # assign obj and via, if present                
+        if len(obj_ls) > 1:
+            a_obj, a_via = obj_ls
+        elif len(obj_ls) == 1:
+            a_obj = obj_ls[0]
         
         # build and return the correctly ordered variables to gameExec
         parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
@@ -400,15 +517,22 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         
 
 
-def parseInput(tkns, legalinputs): # extract objects from tokenized input
+def parseInput(): # extract objects from tokenized input
     
+    tkns = gD.TOKENS
+#    legalinputs = gD.LEGALINPUTS
     parsed_cmds = {}
     matched_cmds = None
     type_track = []
     
-    i = 0
+#    iw = 0     # token index dictKey
+    i = 0      # cmd-type index dictKey
+    
     # for each word in the input
     for w in tkns:
+        
+        # use each WORD token to create GROUPS of parsed cmd matches
+        parsed_cmds[w] = {}
         
         i = i + 1
         
@@ -468,11 +592,14 @@ def parseInput(tkns, legalinputs): # extract objects from tokenized input
                     # build list of potential cmd matches
                     # called PARSED_CMDS
                     
-                    if c in parsed_cmds.keys():
-                        parsed_cmds[c].append(ind)
+                    if c in parsed_cmds[w].keys():
+                        parsed_cmds[w][c].append(ind)
                     else:
-                        parsed_cmds[c] = [ind]
-                
+                        parsed_cmds[w][c] = [ind]
+        
+#        iw = iw + 1  # increment to next token matched-cmd group
+        
+        
 
     de.bug(1, "Parsed input: tokens", tkns, "and cmds", parsed_cmds)
     

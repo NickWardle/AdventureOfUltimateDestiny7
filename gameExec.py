@@ -38,22 +38,21 @@ while WIN == False:
     
     # == SET UP THE DATA ARRAYS == ################################
 
-    
-    # get all legal MOVES for location 
-    moveObj = gD.gameDB['moveCommandsDB'][gD.LOCDATA['moveCmds'][0]]
+    moveObj = []
     legalMoves = []
     moveDesc = []
     moveDest = []
-    
-#    for i in range(len(moveObj)):
-#        legalMoves.append(moveObj[i][0])
-#        moveDesc.append(moveObj[i][1])
-#        moveDest.append(moveObj[i][2])
-    
-    for i,j in moveObj.items():
-        legalMoves.append(moveObj[i]['cmds'])
-        moveDesc.append(moveObj[i]['moveDesc'])
-        moveDest.append(moveObj[i]['moveLoc'])
+
+    # get all MOVES into a list for the location    
+    de.bug(1, "current gD.LOCDATA moveCmds is", gD.LOCDATA['moveCmds'])
+
+    for i in gD.LOCDATA['moveCmds']:
+        moveObj.append(i)
+        
+    for m in moveObj:
+        for i,j in gD.gameDB['moveCommandsDB'][m].items():
+            legalMoves.append(gD.gameDB['moveCommandsDB'][m][i]['cmds'])
+        
         
     # get OBJECTS and object 'refs' array for location
     allObjects = []
@@ -86,8 +85,8 @@ while WIN == False:
     legalInputsA['o'] = objRefs
     legalInputsB = gD.gameDB['uiCmds']
     legalInputsC = gD.gameDB['actionCmds']
-    legalInputs = {**legalInputsC, **legalInputsB, **legalInputsA}
-    de.bug(1, "legalInputs", legalInputs)
+    gD.LEGALINPUTS = {**legalInputsC, **legalInputsB, **legalInputsA}
+    de.bug(1, "legalInputs", gD.LEGALINPUTS)
     
     
     ##############################################################
@@ -115,19 +114,16 @@ while WIN == False:
     # == PARSE AND HANDLE PLAYER INPUT == ########################
     
     # tokenise the input
-    inputTokenized = parseInp.tokenizeInput(myInput)
-    de.bug(1, "inputs tokens", inputTokenized)
+    gD.TOKENS = parseInp.tokenizeInput(myInput)
+    de.bug(1, "inputs tokens", gD.TOKENS)
        
     # parse and return information from the tokenized input data
-    myCmd, myObj, conJunct, myVia = parseInp.parseInput(inputTokenized, legalInputs)
+    myCmd, myObj, conJunct, myVia = parseInp.parseInput()
     de.bug(1, "returned to gameExec with these:", myCmd, myObj, conJunct, myVia)
     
     # deal with returned information: perform actions, display feedback
-    cmd_result = doCmd.doCommand(myCmd, myObj, conJunct, myVia, legalInputs, uiData)
+    cmd_result = doCmd.doCommand(myCmd, myObj, conJunct, myVia, uiData)
     
-    # report current World State after last input has been actioned    
-#    de.bug(5, "current world state is", gD.LOCDATA)
-            
     # EXITING game?
     if gD.EXIT == True:
         break

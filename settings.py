@@ -12,7 +12,7 @@ debug = True
 
 # Hide specific groups of debug messages, add group number to the list
 #group_hide = []
-group_hide = [1,2,3,4,5]
+group_hide = [3,4,5]
 
 
 # == EXTERNAL DATA FILE SETTINGS ===================================

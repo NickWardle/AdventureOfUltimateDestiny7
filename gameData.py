@@ -29,6 +29,10 @@ def init():
     EXIT = False
     global PROMPT
     PROMPT = False
+    global TOKENS
+    TOKENS = []
+    global LEGALINPUTS
+    LEGALINPUTS = {}
     global USERCONF
     USERCONF = False
     global UNKNOWN_INPUT
@@ -186,7 +190,7 @@ gameDB = {
 'm010003' : { 
 
 'd030001' : {
-        'cmds' : ["hidden entrance"],
+        'cmds' : ["hidden entrance", "door"],
         'moveDesc' : "a hidden entrance way",
         'moveLoc' : "amongst the rocks",
         'goDesc' : "You step into the dark entrance", 
@@ -286,7 +290,7 @@ gameDB = {
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-    'intCmds-OK': ['open', 'close']
+    'intCmds-OK': ['open', 'close', 'pick', 'lock', 'unlock']
 #    'useCmds-OK': []
 }
 ,
@@ -300,7 +304,7 @@ gameDB = {
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
-    'intCmds-OK': ['open', 'close']
+    'intCmds-OK': ['open', 'close', 'pick', 'lock', 'unlock']
 #    'useCmds-OK': []
 }
 ,
