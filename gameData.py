@@ -114,18 +114,21 @@ gameDB = {
 # conjunctions affect the outcome of an actionCmd on an object
 'conJuncts' : ['with', 'through', 'in', 'from', 'into', 'on', 'under', 'near', 'next', 'inside'],
 
+#### NO OBJECT REQUIRED ####
 # navigation commands for moving around the spaces
 'navCmds' : ['go', 'walk', 'run', 'leave'],
 
 # exploration commands that reveal information about a whole location (no obj)
 'exploreCmds' : ['search', 'look'],
 
+#### COULD BE MOVE OR OBJECT ####
 # commands that reveal detailed information about an object (req obj)
 'examineCmds' : ['look at', 'examine', 'inspect'],
 
 # commands that reveal locational information about an object (req obj)
 'searchCmds' : ['look for', 'where', 'search for', 'find'],
 
+#### CAN ONLY BE OBJECT ####
 # get commands add an object to the player's hands
 'getCmds' : ['get', 'take', 'pick up'],
 
