@@ -61,9 +61,6 @@ def changeLoc(loc): #generic location changer
         # get current location data and make it GLOBAL
         gD.CURRENT_LOC = loc
         gD.LOCDATA = gD.locDB[loc]
-        
-    else:
-        de.bug("Location not in gD.locDB")
     
     # show location Loading text-pattern
     printText(ss.locLoading)

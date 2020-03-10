@@ -32,18 +32,21 @@ def doCommand(cmd, obj, jun, via, uiData):
         
         if cmd_ky == "m": # MOVEMENT command
             
+            moveDesc = False
+            moveDest = False
             for m in gD.LOCDATA['moveCmds']:
                 for h, i in gD.gameDB['moveCommandsDB'][m].items():
                     for j in i['cmds']:
                         if my_cmd == j:
                             moveDesc = i['goDesc']
+                            
                             if 'destId' in i:
                                 moveDest = i['destId']
                             else:
-                                de.bug("this cmd doesn't change our location")
-            
+                                de.bug("NOTICE: This cmd doesn't change our location")
+
             # show moveDesc feedback for moveCmd
-            ctrls.printText(moveDesc, "move")            
+            ctrls.printText(moveDesc, "move")
             
             # if associated locID for moveCmd - ctrls.changeLoc
             ctrls.changeLoc(moveDest)

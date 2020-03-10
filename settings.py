@@ -7,8 +7,8 @@ Created on Fri Jul 13 09:24:51 2018
 """
 
 # == GLOBAL: SHOW DEBUG MESSAGES? =====================================
-debug = True
-#debug = False
+#debug = True
+debug = False
 
 # Hide specific groups of debug messages, add group number to the list
 #group_hide = []

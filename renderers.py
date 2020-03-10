@@ -19,7 +19,10 @@ import controllers as ctrls
 def render_Text(d, t="default"): #generic text renderer
     
     if t == 'move': # movement description text
-        print(ss.inputChangeLocPre, d)
+        if d != False:
+            print(ss.inputChangeLocPre, d)
+        else:
+            print(ss.inputFeedbackPre, "You can't go that way")
         
     elif t == 'win': # winning message
         print(ss.inputFeedbackPre, d)
