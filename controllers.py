@@ -63,7 +63,7 @@ def changeLoc(loc): #generic location changer
         gD.LOCDATA = gD.locDB[loc]
     
     # show location Loading text-pattern
-    printText(ss.locLoading)
+    printText("\n" + ss.locLoading)
       
     # render new location
     rndr.render_locScreen(gD.LOCDATA)

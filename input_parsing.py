@@ -71,53 +71,6 @@ def cmdDidYouMeanThis(tks, parsed_list): # check with player what input actually
         gD.UNKNOWN_INPUT = None
     
     
-def classifyCommands(tkn_cmd_matches, parsed_final):
-    
-    known_cmds = []
-
-    for a, b in tkn_cmd_matches.items():
-        
-        known_cmds.append(b)
-    
-    de.bug(1, "ALL KNOWN COMMANDS, in order", known_cmds)        
-    
-    # then classify each matched cmd as a type
-    # o = obj, m = mov, conJunct = con 
-    # else = cmd
-    a_cmd = None
-    a_obj = None
-    a_conJunct = None
-    a_via = None
-    obj_ls = []
-    type_list = [None, None, None, None] # see grammar bit below
-    
-    for i in known_cmds:
-        els = i.split("-")
-        if els[0] == "conJuncts":
-            a_conJunct = i
-            type_list[known_cmds.index(i)] = 'jun'
-        elif els[0] == "o":
-            # obj and via present
-            obj_ls.append(i)
-            type_list[known_cmds.index(i)] = 'obj'
-        else:
-            a_cmd = i
-            type_list[known_cmds.index(i)] = 'cmd'
-            
-    
-    de.bug(1, "type_list", type_list)
-    
-    # assign obj and via, if present                
-    if len(obj_ls) > 1:
-        a_obj, a_via = obj_ls
-    elif len(obj_ls) == 1:
-        a_obj = obj_ls[0]
-
-    # build and return the correctly ordered variables to gameExec
-    parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
-        
-    return parsed_final
-    
 
 def cmdLengthChecker(cmd_mtch, parsed_cmds, tkns):
 
@@ -225,7 +178,7 @@ def re_runWrdChecker(d):
     
     
         
-def wrdChecker(tkns, parsed_cmds, key_num=1):
+def wrdChecker(tkns, parsed_cmds):
     
     # If the first dict group in parsed_cmds has nothing in it
     # the first token did not match and so is probably junk
@@ -264,6 +217,7 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         # use tkns as a reference, because parsed_cmds dict is unordered
         # check if each parsed_cmds[tkns] shares any commands with another
         tkn_cmd_matches = {} # complete list of input tokens & matched cmds
+        known_cmds = []
         parsed_final = [] # to send back to gameExec
 
         # skip this if we are dealing with single word input
@@ -276,16 +230,14 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
             # step through tkns as a guide list
             for current_token in working_tokens: 
                 
-                # Check for "door" situation first
+                # Deal with tokens that have MULTIPLE matches in gameData first
                 if len(parsed_cmds[current_token]) > 1:
                     
                     de.bug(1, "Multiple possible gameData matches found for", parsed_cmds[current_token])
                     
                     # if existing tkn_cmd_matches contain get, put, int or useCmds
-                    zz = 0
                     del_keys = []
                     for v in tkn_cmd_matches.values():
-                        zz = zz + 1
                         if ('getCmds' in v) or ('putCmds' in v) or ('intCmds' in v) or ('useCmds' in v):
                         
                             de.bug(1, "OBJECT command already found, forcing object discovery")
@@ -305,18 +257,16 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
                             de.bug(1, "PARSED_FINAL (after reSTART)", parsed_final)
 
                             return parsed_final
-                            
                         
                         # otherwise return a "duplicate objects found" response
                         else:
                             
+                            # THIS IS INCOMPLETE, but it is hard to create a situation 
+                            # where this specific disambiguation would be needed
                             de.bug(1, "Which of these did you mean for", current_token, "?")
                             
-                            ##### THIS IS INCOMPLETE, but it is hard to create a 
-                            # situation where this specific disambiguation would 
-                            # be needed
                     
-                # Otherwise check for dupes as normal
+                # Otherwise check for MULTI word commands in the input
                 else:
                     
                     de.bug(1, "Current token is", working_tokens[i])
@@ -375,7 +325,7 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
                                 de.bug(1, "We have a weird problem with this input", working_tokens[i], "it doesn't resolve to one single command in gameData")
                             
                         
-                        # single word, not a multi-word command
+                        # If no dupes, this is a SINGLE word command
                         else:
                             
                             # check it's not a malformed multi-word
@@ -423,7 +373,7 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
                                     de.bug(1, "We have a weird problem with this input", working_tokens[i], "it doesn't resolve to one single command in gameData")
 
                     
-        # single word, not a multi-word command
+        # This is a SINGLE word input
         else:
             
             # check it's not a malformed multi-word
@@ -474,9 +424,50 @@ def wrdChecker(tkns, parsed_cmds, key_num=1):
         de.bug(1, "MATCHED COMMANDS so far (all done)", tkn_cmd_matches)        
         de.bug(1, "CHECK parsed_final = ", parsed_final)
         
-        classifyCommands(tkn_cmd_matches, parsed_final)
-                  
+        ## Finally, classify the known commands and RETURN everything
+    
+        for a, b in tkn_cmd_matches.items():
+            
+            known_cmds.append(b)
+        
+        de.bug(1, "ALL KNOWN COMMANDS, in order", known_cmds)        
+        
+        # then classify each matched cmd as a type
+        # o = obj, m = mov, conJunct = con 
+        # else = cmd
+        a_cmd = None
+        a_obj = None
+        a_conJunct = None
+        a_via = None
+        obj_ls = []
+        type_list = [None, None, None, None] # see grammar bit below
+        
+        for i in known_cmds:
+            els = i.split("-")
+            if els[0] == "conJuncts":
+                a_conJunct = i
+                type_list[known_cmds.index(i)] = 'jun'
+            elif els[0] == "o":
+                # obj and via present
+                obj_ls.append(i)
+                type_list[known_cmds.index(i)] = 'obj'
+            else:
+                a_cmd = i
+                type_list[known_cmds.index(i)] = 'cmd'
+                
+        
+        de.bug(1, "type_list", type_list)
+        
+        # assign obj and via, if present                
+        if len(obj_ls) > 1:
+            a_obj, a_via = obj_ls
+        elif len(obj_ls) == 1:
+            a_obj = obj_ls[0]
+    
+        # build and return the correctly ordered variables to gameExec
+        parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
         de.bug(1, "PARSED_FINAL (sending to gameExec)", parsed_final)
+        
         return parsed_final
             
                  
@@ -571,11 +562,10 @@ def parseInput(skip=False): # extract objects from tokenized input
         
         parsed_cmds = skip
         
-        
+    ## Check output from above: "parsed_cmds" using wrdChecker and RETURN
 
     de.bug(1, "Parsed input: tokens", tkns, "and cmds", parsed_cmds)
     
-    # Now check the words in that parsed cmds list for matches
     if len(parsed_cmds) > 0:
         matched_cmds = wrdChecker(tkns, parsed_cmds)
     
@@ -584,8 +574,10 @@ def parseInput(skip=False): # extract objects from tokenized input
         de.bug(1, "PROMPT", gD.PROMPT)
         de.bug(1, "UNKNOWN JUNK", gD.UNKNOWN_INPUT)
         matched_cmds = [None, None, None, None]
+        
     elif matched_cmds != None:
         de.bug(1, "successfully matched these commands", matched_cmds)
+        
     else:
         matched_cmds = [None, None, None, None]
         de.bug(1, "there were no valid commands matched in the input")
