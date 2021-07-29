@@ -14,7 +14,6 @@ import controllers as ctrls
 # == HANDLING ALL PLAYER COMMANDS =========================================
 # modules that take inputs from player, or other modules, and update the models
 
-
 def doCommand(cmd, obj, jun, via, uiData):
     
     legalInputs = gD.LEGALINPUTS
@@ -25,7 +24,7 @@ def doCommand(cmd, obj, jun, via, uiData):
         # so we can action the correct function next
         cmd_spl = cmd.split("-")
         cmd_ky = cmd_spl[0]
-        my_cmd = gD.allInputRefs[cmd_spl[0]][int(cmd_spl[1])]
+        my_cmd = gD.INPUT_VARS['THIS_CMD']['user-input']
         
         de.bug(1, "my_cmd is", my_cmd)
         de.bug(1, "move cmds for this loc are", gD.LOCDATA['moveCmds'])
@@ -63,7 +62,7 @@ def doCommand(cmd, obj, jun, via, uiData):
             de.bug(2, "locDATA", gD.LOCDATA)
             
             # send the cmd and the obj to useObject for more detailed handling
-            useObject(cmd, obj, jun, via, legalInputs)
+            useObject(cmd, obj, jun, via)
             
         else: # Command not known
             
@@ -72,7 +71,7 @@ def doCommand(cmd, obj, jun, via, uiData):
     elif obj != None: # empty cmd but we have a singleton obj
         
         # send to useObject anyway to give Player object help feedback
-        useObject(cmd, obj, jun, via, legalInputs)
+        useObject(cmd, obj, jun, via)
             
     else: # Too many params are None to do anything useful
         
@@ -89,8 +88,7 @@ def uiActions(cmd, obj, jun, via, inps, uiData): # generic UI cmd handler
     if cmd != None:
         
         # consolidate cmd reference word
-        c_elems = cmd.split("-")
-        my_cmd = inps[c_elems[0]][int(c_elems[1])]
+        my_cmd = gD.INPUT_VARS['THIS_CMD']['user-input']
 
     # render the appropriate user feedback message for the cmd
     if my_cmd in gD.gameDB['uiCmds']['playerCmds']:
@@ -109,15 +107,34 @@ def uiActions(cmd, obj, jun, via, inps, uiData): # generic UI cmd handler
 
 
 
-def useObject(cmd, obj, jun, via, inps): # generic Object handler
+def useObject(cmd, obj, jun, via): # generic Object handler
     
     # E.G. cmd: generalCmds-0 | obj: o-7 | jun: conJuncts-2 | via: o-11
     
+    
+    ######### GOT TO HERE ###############
+
+        # then finally
+        # need to go through anything that REworks out any of
+        # these now global references and make then use the
+        # GLOBALS instead. For example: do_command()
+        
+        # THEN FINALLY need to make the "what am I" function
+        # that "is this object at the location" can call
+        # and tidy up that whole useObject function A LOT
+        
+    """
+    INPUT_VARS are now: {
+    'THIS_CMD': {'user-input': 'open', 'ref-id': ['intCmds-0']}, 
+    'THIS_OBJ': {'user-input': 'box', 'ref-id': ['ob0002'], 'obj-loc': ['z0001']}, 
+    'THIS_JUN': {'user-input': 'with', 'ref-id': ['conJuncts-0']}, 
+    'THIS_VIA': {'user-input': 'key', 'ref-id': [], 'obj-loc': []}
+    }
+    """
+    
     # Resetting values
-    obs_list = gD.LOCDATA['locObjects']
-    obj_cmds = [] # list of all local object valid COMMAND WORDS e.g. "get"
-    obs = [] # list of all local OBJECT complete dicts {}
-    found_objects = [] # list of any objects matched to user input
+#    obs_list = gD.LOCDATA['locObjects']
+    obj_cmds = [] 
     cmd_ref = None
     obj_ref = None
     via_ref = None
@@ -125,133 +142,47 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
     obj_id = None
     this_obj = None
     this_via = None
-    missing_object = True
     
+    # SETUP SCRIPT VARS from globals
     
-    
-    # CONSOLIDATE REFERENCE WORDS IN USER INPUT
-    
-    if cmd != None:
-        c_elems = cmd.split("-")
-        cmd_ref = inps[c_elems[0]][int(c_elems[1])] # inps is legalInputs
+    if cmd:
+        cmd_ref = gD.INPUT_VARS['THIS_CMD']['user-input']
 
-    if via != None:
-        v_elems = via.split("-")
-        via_ref = gD.allInputRefs[v_elems[0]][int(v_elems[1])] # ALL possible
-        for u, v in gD.gameDB['objectsDB'].items():
-            if via_ref in v['refs']:
-                via_id = u # set script global via_id for refs to gD.gameDB
-                this_via = v # set script global this_via for other functions
-        
-    if jun != None:
-        j_elems = jun.split("-")
-        jun_ref = inps[j_elems[0]][int(j_elems[1])]
-
-    if obj != None:
-        o_elems = obj.split("-")
-        obj_ref = gD.allInputRefs[o_elems[0]][int(o_elems[1])] # ALL possible
-        
-        # LOCATE OBJ AND SET OBJECT ID, DESC, LOC ETC.
-        
-        for dc in obs_list:
-            
-            # IF OBJ IN USER INPUT PRESENT AT LOCATION
-            
-            if obj_ref in gD.gameDB['objectsDB'][dc]['refs']:
-                obj_id = dc # set script global obj_id for refs to gD.gameDB
-                obj_desc = gD.gameDB['objectsDB'][dc]['desc']
-                obj_loc = gD.gameDB['objectsDB'][dc]['location']
-                
-                # set script global this_obj for other functions
-                this_obj = gD.gameDB['objectsDB'][obj_id] 
-                
-                # we found an object!
-                missing_object = False
-                found_objects.append(obj_id)
-                de.bug(5, "Found the", obj_ref, "(", obj_id, ") at the location!")
-        
-        if obj_id == None:
-            
-            # IF OBJ IN USER INPUT IN INVENTORY
-            
-            de.bug(5, "In Player INVENTORY:", gD.PLAYERINV)
-            
-            for sl, its in gD.PLAYERINV.items():
-                for it in its:
-                    if obj_ref in it['refs']:
-                        obj_desc = it['desc']
-                        obj_loc = it['location']
-                        
-                        # upwards search in gameDB for obj_id, match on desc as that is more unique than refs
-                        for ob in gD.gameDB['objectsDB']:
-                            if obj_desc in gD.gameDB['objectsDB'][ob]['desc']:
-                                obj_id = ob # set script global obj_id for refs to gD.gameDB
-                        
-                        # set script global this_obj for other functions
-                        this_obj = gD.gameDB['objectsDB'][obj_id] 
-                        
-                        # we found an object!
-                        missing_object = False
-                        found_objects.append(obj_id)
-                        de.bug(5, "Found the", obj_ref, "(", obj_id, ") in Player Inventory!")
-                        
-        
-        # HANDLE MULTIPLE OBJECTS FOUND FROM VAGUE USER INPUT
-        
-        if len(found_objects) > 1:
-            
-            de.bug(5, "Found multiple objects for that input:", found_objects)
-            
-            # get object descriptions
-            found_object_descs = []
-            for o in found_objects:
-                found_object_descs.append(gD.gameDB['objectsDB'][o]['desc'])
-            
-            # print back human readable object list 
-            renderers.render_objectDedupe(found_object_descs, obj_ref)
-            
-            return
-        
-                
-        # IF OBJ IN USER INPUT NOT FOUND AT LOCATION OR INVENTORY
-        
-        # handle input reference to an object that is not at this loc
-        if missing_object == True:
-            de.bug('missing object', obj_ref)
-            ctrls.printText(obj_ref, 'missing object') 
-            
-            # EXIT this function
-            
-            return False 
-
-        de.bug(3, "this_obj is", this_obj)                    
-        de.bug(3, "obj values ref", obj_ref, "id", obj_id, "desc & loc", obj_desc, " ", obj_loc)
+    if jun:
+        jun_ref = gD.INPUT_VARS['THIS_JUN']['user-input']
     
-        # GET ALL COMMANDS FOR THE OBJECT IN THE USER INPUT
+    if via:
+        via_ref = gD.INPUT_VARS['THIS_VIA']['user-input']
         
-        for k, v in this_obj.items():
-            #match any of "getCmds-OK, putCmds-OK" etc
-            if 'OK' in k: 
-                # limit to only the allowed cmds
-                if len(v) >= 1:
-                    for i in range(len(v)):
-                        obj_cmds.append(v[i])
-                else:
-                    # extract name-string of command list
-                    # and get all cmds in that command list
-                    w = k[:-3] 
-                    a = gD.gameDB['actionCmds'][w]
-                    for i in range(len(a)):
-                        obj_cmds.append(a[i])
-                                    
-                                    
+        # Detect invalid VIA
+        if gD.INPUT_VARS['THIS_VIA']['ref-id']:
+            via_id = gD.INPUT_VARS['THIS_VIA']['ref-id'][0]
+            this_via = gD.gameDB['objectsDB'][via_id]
+        else:
+            de.bug(1, "INVALID VIA", via_ref)
+        
+
+    if obj:
+        obj_ref = gD.INPUT_VARS['THIS_OBJ']['user-input']
+        
+        # Detect invalid obj
+        if gD.INPUT_VARS['THIS_OBJ']['ref-id']:
+            obj_id = gD.INPUT_VARS['THIS_OBJ']['ref-id'][0]
+            obj_desc = gD.gameDB['objectsDB'][obj_id]['desc']
+            obj_locdesc = gD.gameDB['objectsDB'][obj_id]['location']
+            this_obj = gD.gameDB['objectsDB'][obj_id]
+            
+             # Get all Object Commands
+            obj_cmds = ctrls.get_ObjectCommands(this_obj)
+                                      
             # User referenced a VALID object WITHOUT putting
             # an action command - So give them help
             if cmd_ref == None:
                 renderers.render_objectHelp(obj_cmds, this_obj['name'])
                 return False # exit this function
-    
-
+        else:
+            de.bug(1, "INVALID OBJ", obj_ref)
+        
      
     
     ############## COMMANDS THAT REQUIRE NO OBJECT ################
@@ -265,9 +196,9 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
         return True # exit this function, we're done here
     
     
-    if via != None:
+    if via_ref:
     
-        ### == navigation COMMANDS w/o VIA e.g. 'go in', 'get in' =========
+        ### == navigation COMMANDS w/ VIA e.g. 'go in', 'get in' =========
                                 
         if cmd_ref in ('get', 'go', 'walk'):
                         
@@ -283,7 +214,18 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
     
     ############## COMMANDS THAT NEED AN OBJECT ################
     
-    if obj != None:
+    if obj_ref:
+        
+        # if obj_ref != None, but gD.INPUT_VARS['THIS_OBJ']['ref-id'] == None:
+        ## This means that the command is invalid for the object
+        # so throw that error "You can't X the Y"
+        if obj_id == None:
+            de.bug(1, "INVALID obj", obj_ref, ". You can't", cmd_ref, "this object")
+        
+        ### We are no longer checking if object at location before this
+        # So GET for example, needs to check if INPUT_VARS['THIS_OBJ']['obj-loc'] == gD.CURRENTLOC
+        # And put needs to check obj in INV
+        # And any other cmd that requires obj to be local needs to CHECK
                     
         ### == specific explore COMMANDS: look in / under etc ====   
     
@@ -324,17 +266,18 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
             
                 
             
-            
         ### == examine COMMANDS: look at, examine etc. =============
         
-        elif cmd_ref == "look at":
+        elif cmd_ref in gD.gameDB['actionCmds']['examineCmds']:
             
             d = [this_obj['desc'],ctrls.get_ObjectState(this_obj, s='access')]
+            
+            ### FIX THIS #################
+            # Combine these two printText renders into one
             
             # show object description
             ctrls.printText(d, 'look at')
     
-        elif cmd_ref in ("examine", "inspect"):
             # bit of a hack this... add obj name to end of obj_cmds
             # for renderer to .pop() off afterwards
             obj_cmds.append(this_obj['name'])
@@ -342,12 +285,14 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
             ctrls.printText(obj_cmds, 'examine')
             
 
-        ### == explore COMMANDS: look for, where etc ===========
+
+        ### == search COMMANDS: look for, where etc ===========
         
-        elif cmd_ref in ('look for', 'where'):
+        elif cmd_ref in gD.gameDB['actionCmds']['searchCmds']:
             
             # show both obj desc and loc together                        
-            ctrls.printText([obj_desc, obj_loc], cmd_ref)
+            ctrls.printText([obj_desc, obj_locdesc], cmd_ref)
+            
             
 
         ### == get, put, use, int COMMANDS =====================
@@ -367,7 +312,7 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                     de.bug(4, "these contained objs", ids, "this containment type", t, "this_obj", this_obj)
                     
                     # add obj to inv & ctrls.update_WorldState
-                    if ctrls.update_Inventory(this_obj, "add") != False:
+                    if ctrls.update_Inventory(obj_id, "add") != False:
                     
                         # render feedback to player
                         renderers.render_objectActions(this_obj, cmd_ref, "get-take")
@@ -405,7 +350,7 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                 if cmd_ref == i:
                     
                     # remove obj from inv
-                    if ctrls.update_Inventory(this_obj, "remove") != False:
+                    if ctrls.update_Inventory(obj_id, "remove") != False:
                         
                         # is there a VIA object for the action?
                         if via != None: # put something IN somewhere (VIA)
@@ -461,9 +406,9 @@ def useObject(cmd, obj, jun, via, inps): # generic Object handler
                         renderers.render_objectActions(this_obj, cmd_ref, can_open)
                         
                         # player does not have the req object
-                        this_via = gD.gameDB['objectsDB'][this_obj['permissions']['locked_by']]
+                        this_via = gD.gameDB['objectsDB'][obj_id]['permissions']['locked_by']
                         if ctrls.get_InventorySlot(this_via) == False:
-                            ctrls.printText(this_via['name'], 'not in inv')
+                            ctrls.printText(gD.gameDB['objectsDB'][this_via]['name'], 'not in inv')
                         
                 else:
                     

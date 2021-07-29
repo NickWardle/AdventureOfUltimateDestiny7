@@ -6,6 +6,7 @@ Created on Fri Jul 13 09:24:51 2018
 """
 import debugger as de
 import gameData as gD
+import controllers as ctrls
 import re
 from nltk.tokenize import word_tokenize
 
@@ -424,8 +425,7 @@ def wrdChecker(tkns, parsed_cmds):
         de.bug(1, "MATCHED COMMANDS so far (all done)", tkn_cmd_matches)        
         de.bug(1, "CHECK parsed_final = ", parsed_final)
         
-        ## Finally, classify the known commands and RETURN everything
-    
+        ## Finally, classify the known commands    
         for a, b in tkn_cmd_matches.items():
             
             known_cmds.append(b)
@@ -463,17 +463,203 @@ def wrdChecker(tkns, parsed_cmds):
             a_obj, a_via = obj_ls
         elif len(obj_ls) == 1:
             a_obj = obj_ls[0]
-    
+        
+        
         # build and return the correctly ordered variables to gameExec
+        parsed_types = ['cmd', 'obj', 'jun', 'via']
         parsed_final.extend([a_cmd, a_obj, a_conJunct, a_via])
+        
+        # Create TEMP_VARS dictionary of all user-input, dicovered matches
+        # in gameData, and locations of objects for subsequent NLP rules
+        
+        TEMP_VARS = {} 
+        
+        for a, b in tkn_cmd_matches.items():
+            v_name = ('this_' + parsed_types[parsed_final.index(b)]).upper()
+            TEMP_VARS[v_name] = {}
+            TEMP_VARS[v_name]['user-input'] = a
+            TEMP_VARS[v_name]['ref-id'] = []
+            if (parsed_types[parsed_final.index(b)] == 'obj') or (parsed_types[parsed_final.index(b)] == 'via'):
+                TEMP_VARS[v_name]['obj-loc'] = []
+                objIds = ctrls.get_ObjectId(a)
+                de.bug(1, "possible ids for the obj are:", objIds)
+                i = 0
+                for o in objIds:
+                    l = ctrls.get_ObjectLocation(o)
+                    de.bug(1, "OBJ LOC is", l)
+                    TEMP_VARS[v_name]['obj-loc'].append(l)
+                    if l == False: # FALSE if obj not found at loc or INV
+                        TEMP_VARS[v_name]['ref-id'].append(False)
+                    else:
+                        TEMP_VARS[v_name]['ref-id'].append(o)
+                    i += 1
+                    
+            else:
+                TEMP_VARS[v_name]['ref-id'].append(b)
+        
+        de.bug(1, "TEMP_VARS", TEMP_VARS)
+        
+        # HANDLING MULITPLE MATCHES from vague user-input
+        # Help the player by removing some options that are 
+        # impossible given the structure of the user input 
+        
+        ##################### GRAMMAR BIT #############################
+        ################### IMPORTANT NOTE ############################
+        
+        # This is only to remove impossible options from a list
+        # that already contains too many options. This is NOT
+        # pre-censoring user-input. All SINGLE matches, including illegal 
+        # ones are handled later by specific clauses in command_handling
+        
+        # Remove INVALID Commands options
+        if 'THIS_CMD' in TEMP_VARS:
+            if len(TEMP_VARS['THIS_CMD']['ref-id']) > 1:
+                
+                # if OBJ present cannot be an EXPLORE command
+                del_list = []
+                if len(TEMP_VARS['THIS_OBJ']['ref-id']) > 0:
+                    for i in TEMP_VARS['THIS_CMD']['ref-id']:
+                        if "explore" in i:
+                            c = TEMP_VARS['THIS_CMD']['ref-id'].index(i)
+                            de.bug(1, "Need to REMOVE this ref-id", c)
+                            del_list.append(c)
+                            
+                # de-dupe del_list
+                del_list = list(set(del_list))
+                # delete invalid items
+                for d in del_list:
+                    TEMP_VARS['THIS_CMD']['ref-id'].remove(d)
+                            
+                # If no OBJ, or OBJ not in INV, can't be a PUT command
+                    # Not complete (because I think it is impossible 
+                    # to have multiple matched commands, so this section is 
+                    # not needed! :)
+            
+        # Remove INVALID Objects options
+        if 'THIS_OBJ' in TEMP_VARS:
+            if len(TEMP_VARS['THIS_OBJ']['ref-id']) > 1:
+            
+                ## RULE: if THIS_CMD is GET then....
+                del_list = []
+                for i in TEMP_VARS['THIS_CMD']['ref-id']:
+                    if "get" in i:
+                        
+                        # ...object must be in LOCDATA or it is not visible to the player
+                        for k in TEMP_VARS['THIS_OBJ']['ref-id']:
+                            if k in gD.LOCDATA['locObjects']: # check locObjects, not ['obj-loc'] because a key in an OPEN box will be in locObjects, but have an obj-loc of the box
+                                continue
+                            else:
+                                de.bug(1, "Need to REMOVE this ref-id", k, "and this obj-loc", TEMP_VARS['THIS_OBJ']['obj-loc'][TEMP_VARS['THIS_OBJ']['ref-id'].index(k)])
+                                del_list.append(k)
+                        
+                        # ...the object cannot be in INV
+                        for j in TEMP_VARS['THIS_OBJ']['obj-loc']:
+                            if j == '$INV':
+                                c = TEMP_VARS['THIS_OBJ']['obj-loc'].index(j)
+                                de.bug(1, "Need to REMOVE this ref-id", TEMP_VARS['THIS_OBJ']['ref-id'][c], "and this obj-loc", TEMP_VARS['THIS_OBJ']['obj-loc'][c])
+                                del_list.append(TEMP_VARS['THIS_OBJ']['ref-id'][c])
+                
+                # de-dupe del_list
+                del_list = list(set(del_list))
+                # delete invalid items
+                for d in del_list:                                
+                    TEMP_VARS['THIS_OBJ']['obj-loc'].remove(TEMP_VARS['THIS_OBJ']['obj-loc'][TEMP_VARS['THIS_OBJ']['ref-id'].index(d)])
+                    TEMP_VARS['THIS_OBJ']['ref-id'].remove(d)            
+                
+                
+                ## RULE: if THIS_CMD is PUT then...
+                del_list = []
+                for i in TEMP_VARS['THIS_CMD']['ref-id']:
+                    if "put" in i:
+                        
+                        # ...the object must be in INV
+                        for j in TEMP_VARS['THIS_OBJ']['obj-loc']:
+                            if j != '$INV':
+                                c = TEMP_VARS['THIS_OBJ']['obj-loc'].index(j)
+                                de.bug(1, "Need to REMOVE this ref-id", TEMP_VARS['THIS_OBJ']['ref-id'][c], "and this obj-loc", TEMP_VARS['THIS_OBJ']['obj-loc'][c])
+                                del_list.append(TEMP_VARS['THIS_OBJ']['ref-id'][c])
+                
+                # delete invalid items
+                for d in del_list:                                
+                    TEMP_VARS['THIS_OBJ']['obj-loc'].remove(TEMP_VARS['THIS_OBJ']['obj-loc'][TEMP_VARS['THIS_OBJ']['ref-id'].index(d)])
+                    TEMP_VARS['THIS_OBJ']['ref-id'].remove(d)   
+                        
+                
+                ## RULE: check OBJ commands, if THIS_CMD not there remove OBJ
+                del_list = []
+                for o in TEMP_VARS['THIS_OBJ']['ref-id']:
+                    this_obj = gD.gameDB['objectsDB'][o]
+                    ch_list = []
+                    for k, v in this_obj.items():
+                        #match any of "getCmds-OK, putCmds-OK" etc
+                        if 'OK' in k:
+                            els = k.split("-")
+                            ch_list.append(els[0])
+                    
+                    cm = TEMP_VARS['THIS_CMD']['ref-id'][0].split("-")
+                    if ch_list.count(cm[0]) == 0:
+                        de.bug(1, "Need to REMOVE this ref-id", o, "and this obj-loc", TEMP_VARS['THIS_OBJ']['obj-loc'][TEMP_VARS['THIS_OBJ']['ref-id'].index(o)])
+                        del_list.append(o)
+                        
+                # de-dupe del_list
+                del_list = list(set(del_list))
+                # delete invalid items
+                for d in del_list:    
+                    TEMP_VARS['THIS_OBJ']['obj-loc'].remove(TEMP_VARS['THIS_OBJ']['obj-loc'][TEMP_VARS['THIS_OBJ']['ref-id'].index(d)])
+                    TEMP_VARS['THIS_OBJ']['ref-id'].remove(d)
+
+        
+        
+        # Remove INVALID Conjuncts options
+#        if 'THIS_JUN' in TEMP_VARS:
+            # Not got any yet :)
+        
+        
+        # Remove INVALID Vias options
+        if 'THIS_VIA' in TEMP_VARS:
+            if len(TEMP_VARS['THIS_VIA']['ref-id']) > 1:
+                
+                # RULE: if conjunct is "with", VIA must be in INV, or not valid
+                del_list = []
+                if TEMP_VARS['THIS_JUN']['user-input'] == 'with':
+                    for l in TEMP_VARS['THIS_VIA']['obj-loc']:
+                        if l is not '$INV':
+                            de.bug(1, "Need to REMOVE this ref-id", TEMP_VARS['THIS_VIA']['ref-id'][TEMP_VARS['THIS_VIA']['obj-loc'].index(l)], "and this obj-loc", l)
+                            del_list.append(TEMP_VARS['THIS_VIA']['ref-id'][TEMP_VARS['THIS_VIA']['obj-loc'].index(l)])
+                            
+                # delete invalid items
+                for d in del_list:
+                    TEMP_VARS['THIS_VIA']['obj-loc'].remove(TEMP_VARS['THIS_VIA']['obj-loc'][TEMP_VARS['THIS_VIA']['ref-id'].index(d)])
+                    TEMP_VARS['THIS_VIA']['ref-id'].remove(d)
+        
+        
+        
+        ######################### END OF GRAMMAR BIT #######################
+        
+        
+        de.bug(1, "CLEANED TEMP_VARS", TEMP_VARS)
+        
+        # set GLOBAL VARS
+        gD.INPUT_VARS = TEMP_VARS
+        de.bug(1, "INPUT_VARS are now:", gD.INPUT_VARS)
+        
+        # If more than one remaining option set input prompt to "duplicates"
+        for i, j in gD.INPUT_VARS.items():
+            if len(j['ref-id']) > 1:
+                de.bug(1, "Duplicates still present. Need more details.")
+                gD.PROMPT = 'duplicates'
+                return False
+        
         de.bug(1, "PARSED_FINAL (sending to gameExec)", parsed_final)
         
-        return parsed_final
-            
-                 
+        return parsed_final 
 
 
 def parseInput(skip=False): # extract objects from tokenized input
+    
+    # Reset duplicates prompt builder before next input parsing run    
+    if gD.PROMPT == 'duplicates':
+        gD.PROMPT = False
     
     tkns = gD.TOKENS
     
@@ -562,10 +748,9 @@ def parseInput(skip=False): # extract objects from tokenized input
         
         parsed_cmds = skip
         
-    ## Check output from above: "parsed_cmds" using wrdChecker and RETURN
-
     de.bug(1, "Parsed input: tokens", tkns, "and cmds", parsed_cmds)
-    
+
+    ## Check output from above: "parsed_cmds" using wrdChecker and RETURN    
     if len(parsed_cmds) > 0:
         matched_cmds = wrdChecker(tkns, parsed_cmds)
     

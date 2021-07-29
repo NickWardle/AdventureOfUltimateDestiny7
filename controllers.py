@@ -31,13 +31,14 @@ def clearLocData():
 
 def buildPrompt(t, d=None):
     
-#    de.bug("t", t, "d", d)
-    
     if t == 'default':
         return rndr.render_prompt(gD.LOCDATA['locInputDesc'], 'default prompt')
     
     elif t == 'did you mean':
         return rndr.render_prompt(d, 'did you mean')
+    
+    elif t == 'duplicates':
+        return whichOneDoYouMean(d['ref-id'], d['user-input'])
     
 
 def printText(d, t="default"): # generic text printer
@@ -79,17 +80,34 @@ def locConjGenerator(n, t):
         return ss.locTerminus[n]
 
 
+# == INPUT PARSER CONTROLERS  ======================================
+        
+
+def whichOneDoYouMean(objs, obj_ref):
+    
+    # HANDLE MULTIPLE OBJECTS FOUND FROM VAGUE USER INPUT   
+    
+    # get object descriptions
+    found_object_descs = []
+    for o in objs:
+        found_object_descs.append(gD.gameDB['objectsDB'][o]['desc'])
+    
+    # print back human readable object list 
+    return rndr.render_objectDedupe(found_object_descs, obj_ref)
+    
+
+
 
 # == PLAYER INVENTORY CONTROLLERS  ===============================
 
 
 def get_InventorySlot(d): # check if an item is in the inventory (and get slot)
     
-    # NOTE: d must be a COMPLETE object, not just an obj_id
+    # Accepts: d MUST be an obj_id
     
     # CHECK (and return) object's inventory-slot
-    if 'inventory-slot' in d:
-        inv_slot = d['inventory-slot']
+    if 'inventory-slot' in gD.gameDB['objectsDB'][d]:
+        inv_slot = gD.gameDB['objectsDB'][d]['inventory-slot']
         
         # check if object is IN inv
         if d in gD.PLAYERINV[inv_slot]:
@@ -99,16 +117,17 @@ def get_InventorySlot(d): # check if an item is in the inventory (and get slot)
     
     else:
         # check if item can take GET, PUT or USE commands
-        if any (k in d for k in ('getCmds-OK', 'putCmds-OK', 'useCmds-OK')):
-            de.bug(5, "ERROR, missing inventory slot on ", d, "in gameData file")
+        if any (k in gD.gameDB['objectsDB'][d] for k in ('getCmds-OK', 'putCmds-OK', 'useCmds-OK')):
+            de.bug(5, "ERROR, missing inventory slot on ", gD.gameDB['objectsDB'][d], "in gameData file")
         else:
-            de.bug(5, "this object ", d['name'], "cannot exist in the inventory")
+            de.bug(5, "this object ", gD.gameDB['objectsDB'][d]['name'], "cannot exist in the inventory")
             return False
     
 
 def update_Inventory(d, t):
     
-    # NOTE: d must be a COMPLETE object, not just an obj_id
+    # Accepts: d MUST be an obj_id
+    # t = action flag
     
     # check if player owns obj and get inv_slot (by return)
     s = get_InventorySlot(d)
@@ -119,8 +138,8 @@ def update_Inventory(d, t):
         if s != False:
             return False
         else:
-            # get object's inventory-slot
-            inv_slot = d['inventory-slot']
+            # get appropriate inventory-slot for object
+            inv_slot = gD.gameDB['objectsDB'][d]['inventory-slot']
             gD.PLAYERINV[inv_slot].append(d)
     
     # remove from inventory
@@ -134,6 +153,68 @@ def update_Inventory(d, t):
 
 
 # == OBJECT CONTROLLERS ==============================================
+
+def get_ObjectCommands(this_obj):
+    
+    ######## GET ALL COMMANDS FOR THE OBJECT IN THE USER INPUT ######
+    obj_cmds = []
+    
+    for k, v in this_obj.items():
+        #match any of "getCmds-OK, putCmds-OK" etc
+        if 'OK' in k: 
+            # limit to only the allowed cmds
+            if len(v) >= 1:
+                for i in range(len(v)):
+                    obj_cmds.append(v[i])
+            else:
+                # extract name-string of command list
+                # and get all cmds in that command list
+                w = k[:-3] 
+                a = gD.gameDB['actionCmds'][w]
+                for i in range(len(a)):
+                    obj_cmds.append(a[i])
+                    
+    return obj_cmds
+
+
+def get_ObjectId(input_token):
+    
+    # Accepts: User input word (token)
+    # Returns: [list of ids]
+    # NOTE: returns all matching ids for objects in the gameData
+    
+    id_list = []
+    for ob, dd in gD.gameDB['objectsDB'].items():
+        if input_token in dd['refs']:
+            id_list.append(ob)
+    
+    return id_list
+
+
+def get_ObjectLocation(d):
+    
+    # Returns:
+    # OBJECT Location:
+    #   '$INV' : if object is in the PLAYER INVENTORY
+    #   False : if object not present at location
+    #   gD.CURRENT_LOC : if object present at location, but not contained, just "in world"
+    #   (containing parent) obj_id : if obj contained by a parent (at location)
+    
+    for slt, itms in gD.PLAYERINV.items():
+        if d in itms:
+            return '$INV'
+    
+    if 'contained_by' in gD.gameDB['objectsDB'][d]['state']:
+        if gD.gameDB['objectsDB'][d]['state']['contained_by'] in gD.LOCDATA['locObjects']:
+            return gD.gameDB['objectsDB'][d]['state']['contained_by']
+        
+    elif d in gD.LOCDATA['locObjects']:
+    
+      return gD.CURRENT_LOC  
+        
+    else:
+        return False
+
 
       
 def get_ObjectState(d, s=None):
@@ -159,6 +240,7 @@ def get_ObjectState(d, s=None):
 
 def get_ObjectPermissions(d): # access control to certain objects
     
+    # Accepts: d = whole object
     # Returns: 
     # "ok" if no access restrictions on object
     # "has-req-obj" if player has req_obj to access locked object
@@ -174,12 +256,8 @@ def get_ObjectPermissions(d): # access control to certain objects
         elif d['state']['access'] == 'unlocked':
             perm_type = "unlocked_by"
             
-        # get object permissions
-        req_perm = d['permissions']
-        
-        if perm_type in req_perm:
-                
-            req_obj = gD.gameDB['objectsDB'][req_perm[perm_type]] 
+        if perm_type in d['permissions']:
+            req_obj = d['permissions'][perm_type] 
             
             # check if player has required object in their inventory
             de.bug(5, "checking player inventory for", req_obj)
@@ -249,7 +327,7 @@ def get_ObjectContents(obj_id):
         de.bug(6, "Object:", obj_id, "has no contents")
         return obj_id, False, False
 
-    
+       
     
     
 def update_ObjectState(obj_id, o, cmd_ref, p=None): 
@@ -262,9 +340,9 @@ def update_ObjectState(obj_id, o, cmd_ref, p=None):
     # == Simple state changes ==================================
     if cmd_ref == 'un_contain': 
                 
-        de.bug(5, "Want to un-parent this:", obj_id, "from this:", gD.gameDB['objectsDB'][p[0]]['state']['contains'])
+        de.bug(5, "Want to un-parent this:", obj_id, "from this:", gD.gameDB['objectsDB'][p]['state']['contains'])
         
-        gD.gameDB['objectsDB'][p[0]]['state']['contains'].remove(obj_id)
+        gD.gameDB['objectsDB'][p]['state']['contains'].remove(obj_id)
         
     elif cmd_ref == 'add':
         
@@ -380,7 +458,6 @@ def update_WorldState(ids, t, c):
     
     # == REMOVE OBJECTS ==============================
     
-#    if cmd_ref in gD.gameDB['actionCmds']['getCmds']:
     if c == 'remove':
         
         if t == False: # sent obj has no contents
@@ -401,7 +478,6 @@ def update_WorldState(ids, t, c):
     
     # == ADDING OBJECTS ==============================
         
-#    elif cmd_ref in gD.gameDB['actionCmds']['putCmds']:
     elif c == 'add':
         
         if t == False: # sent obj has no contents

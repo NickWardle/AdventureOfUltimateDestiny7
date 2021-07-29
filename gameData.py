@@ -37,6 +37,8 @@ def init():
     USERCONF = False
     global UNKNOWN_INPUT
     UNKNOWN_INPUT = None
+    global INPUT_VARS
+    INPUT_VARS = {}
     
     # create allInputRefs list (to match against tokens to find ANY possible match, not just matches legal within the current location)
     allUICmds = gameDB['uiCmds']
@@ -116,7 +118,7 @@ gameDB = {
 
 #### NO OBJECT REQUIRED ####
 # navigation commands for moving around the spaces
-'navCmds' : ['go', 'walk', 'run', 'leave'],
+#'navCmds' : ['go', 'walk', 'run', 'leave'], # not required because locations have their own movement cmd words
 
 # exploration commands that reveal information about a whole location (no obj)
 'exploreCmds' : ['search', 'look'],
@@ -129,10 +131,10 @@ gameDB = {
 'searchCmds' : ['look for', 'where', 'search for', 'find'],
 
 #### CAN ONLY BE OBJECT ####
-# get commands add an object to the player's hands
+# get commands add an object to the player's INVENTORY
 'getCmds' : ['get', 'take', 'pick up'],
 
-# put commands move an object from the players hands to another location
+# put commands move an object from the players INVENTORY to another location
 'putCmds' : ['leave', 'drop', 'put down', 'put'],
 
 # interaction commands change the state of an object
@@ -206,7 +208,7 @@ gameDB = {
 'm010004' : { 
 
 'd040001' : {
-        'cmds' : ["outside", "leave the cave"],
+        'cmds' : ["outside", "leave"],
         'moveDesc' : "a way out of the cave",
         'moveLoc' : "outside into the light",
         'goDesc' : "You step back out into the sunlight", 
@@ -248,6 +250,7 @@ gameDB = {
     'location': 'partially hidden under a bush', 
     'permissions': {}, 
     'state': {}, 
+    'containing-words': [],
     'inventory-slot': 'utils', 
     'getCmds-OK': [],
     'putCmds-OK': [], 
@@ -262,6 +265,7 @@ gameDB = {
     'location': 'under a tree', 
     'permissions': {'locked_by': 'ob0001'}, 
     'state': {'access': 'locked', 'contains': ['ob0006','ob0003']}, 
+    'containing-words': ['in', 'inside'],
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
@@ -275,7 +279,8 @@ gameDB = {
     'desc': 'a rusted old iron key covered in flaking yellow paint', 
     'location': 'just sitting there', 
     'permissions': {}, 
-    'state': {'contained_by': ['ob0002']}, 
+    'state': {'contained_by': 'ob0002'}, 
+    'containing-words': [],
     'inventory-slot': 'utils', 
     'getCmds-OK': [],
     'putCmds-OK': [], 
@@ -290,6 +295,7 @@ gameDB = {
     'location': 'covered in vines and roots', 
     'permissions': {'locked_by': 'ob0006'}, 
     'state': {'access': 'locked', 'contains': ['m010003']}, 
+    'containing-words': ['through', 'behind'],
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
@@ -304,6 +310,7 @@ gameDB = {
     'location': 'in the middle of a wall', 
     'permissions': {'locked_by': 'ob0001'}, 
     'state': {'access': 'locked', 'contains': ['m010003']}, 
+    'containing-words': ['through', 'behind'],
 #    'inventory-slot': '', 
 #    'getCmds-OK': [],
 #    'putCmds-OK': [],
@@ -317,7 +324,8 @@ gameDB = {
     'desc': 'a vicious, sharp, pointy dagger', 
     'location': 'glinting on the floor', 
     'permissions': {}, 
-    'state': {'contained_by': ['ob0002']}, 
+    'state': {'contained_by': 'ob0002'}, 
+    'containing-words': [],
     'inventory-slot': 'weapons', 
     'getCmds-OK': [],
     'putCmds-OK': [],

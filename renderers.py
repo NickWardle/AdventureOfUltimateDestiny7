@@ -144,6 +144,12 @@ def render_prompt(d, t):
         return ss.inputQuestionPre + "I didnt understand '" + d[0].lower() + "' Did you mean '" + d[1].lower() + "'? Y/N\n" + ss.shortLnNewLine + '\n'
 
 
+def render_objectDedupe(d, inp):
+    
+    return ss.inputQuestionPre + "Which " + inp + " do you mean: " + tfs.listify(d, False, 'or') + "?\n" + ss.shortLnNewLine + '\n'
+
+
+
 def render_objectActions(d, cmd, t, ob=None):
     
     de.bug(3, "data for interaction is", d)
@@ -191,10 +197,6 @@ def render_objectHelp(d, n):
             
     # list out the available commands
     print(tfs.listify(d))
-    
-def render_objectDedupe(d, inp):
-    
-    print(ss.inputFeedbackPre, "Which", inp, "do you mean:", tfs.listify(d, False, 'or'), "?")
 
 
 # == VIEWS =================================================
@@ -279,9 +281,19 @@ def render_charInventory(): # render player inventory
     # reset vars
     invEmpty = True
     
+    # expand inventory out for rendering
+    expanded_inventory = {}
+    for item_slot, slot_items in gD.PLAYERINV.items():
+        temp_list = []
+        expanded_inventory[item_slot] = temp_list
+        if len(slot_items) > 0:
+            for it in slot_items:
+                temp_list.append(gD.gameDB['objectsDB'][it])
+            expanded_inventory[item_slot] = temp_list
+    
     print(ss.inventoryTitle, '\n')
     
-    for item_slot, slot_items in gD.player_inventory.items():
+    for item_slot, slot_items in expanded_inventory.items():
         
         # pad item_slot to 10 chars
         pad = len(item_slot) + (10 - len(item_slot))
@@ -317,6 +329,9 @@ def render_charInventory(): # render player inventory
     if invEmpty == True:
         print("\n          You have nothing in your Inventory \n\n")
         print(ss.rowDiv, '\n')
+    
+    # delete expanded_inventory to save memory
+    expanded_inventory = {}
     
     
 

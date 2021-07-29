@@ -7,12 +7,19 @@ Created on Fri Jul 13 09:24:51 2018
 """
 
 # == GLOBAL: SHOW DEBUG MESSAGES? =====================================
-#debug = True
-debug = False
+debug = True
+#debug = False
 
 # Hide specific groups of debug messages, add group number to the list
-#group_hide = []
-group_hide = [3,4,5]
+# comment out numbers you want shown
+group_hide = [
+#        1, # input parsing & command matching
+#       2, # nothing really, probably get rid of these ones?
+#        3, # containing? object permissions? dupe of 4 and 5?
+#        4, # object permissions
+#        5 # containing & being contained
+]
+
 
 
 # == EXTERNAL DATA FILE SETTINGS ===================================
