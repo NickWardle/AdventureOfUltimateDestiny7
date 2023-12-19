@@ -623,7 +623,7 @@ def wrdChecker(tkns, parsed_cmds):
                 del_list = []
                 if TEMP_VARS['THIS_JUN']['user-input'] == 'with':
                     for l in TEMP_VARS['THIS_VIA']['obj-loc']:
-                        if l is not '$INV':
+                        if l != '$INV':
                             de.bug(1, "Need to REMOVE this ref-id", TEMP_VARS['THIS_VIA']['ref-id'][TEMP_VARS['THIS_VIA']['obj-loc'].index(l)], "and this obj-loc", l)
                             del_list.append(TEMP_VARS['THIS_VIA']['ref-id'][TEMP_VARS['THIS_VIA']['obj-loc'].index(l)])
                             
