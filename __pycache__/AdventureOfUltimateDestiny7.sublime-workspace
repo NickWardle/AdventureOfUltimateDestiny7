@@ -1,0 +1,224 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/C/Users/nwardle/.spyder-py3/Projects/AdventureOfUltimateDestiny7/renderers.py",
+			"settings":
+			{
+				"buffer_size": 11630,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/nwardle/.spyder-py3/Projects/AdventureOfUltimateDestiny7"
+	],
+	"file_history":
+	[
+		"/C/Users/nwardle/AppData/Local/RoboHesse/Data/SaveFiles/SaveFile.tcs",
+		"/C/Users/nwardle/.spyder-py3/Projects/AdventureOfUltimateDestiny7/__pycache__/command_handling.cpython-311.pyc",
+		"/D/Perforce/CryEngine/Data/Libs/Foundry/Records/Entities/SCItem/Characters/Human/Armor/PU_Armor/Heavy/Arms/cds_legacy_armor_heavy_arms_01_01_01.xml",
+		"/C/Users/nwardle/Downloads/user.cfg",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/RRP_full.xml",
+		"/C/Users/nwardle/AppData/Local/RoboHesse/Data/SaveFiles/FolderShortcuts.tcs",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/output/RRP_bulk_price_update_report_20231031141921.txt",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/test_RRP.xml",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/RRP_bulk_price_update_report_20231030170802.txt",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/updated_RRP.xml",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/RRP_bulk_price_update_report.txt",
+		"/C/Users/nwardle/.spyder-py3/Projects/RRP Bulk Price Updater/name_id_lookup.csv",
+		"/C/Program Files/Roberts Space Industries/StarCitizen/LIVE/USER/Client/0/Gotos/pu/LiveQA_Gotos.xml",
+		"/C/Program Files/Roberts Space Industries/StarCitizen/LIVE/USER/Client/0/DebugGUI/settings.json"
+	],
+	"find":
+	{
+		"height": 27.3333333333
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/C/Users/nwardle/.spyder-py3/Projects/AdventureOfUltimateDestiny7/renderers.py",
+					"selected": true,
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 11630,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 432.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.3333333333
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "AdventureOfUltimateDestiny7.sublime-project",
+	"replace":
+	{
+		"height": 50.6666666667
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
